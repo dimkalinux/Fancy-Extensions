@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_simtopics</id>
+	<title>Fancy Similar Topics</title>
+	<version>0.6.2</version>
+	<description>Show similar topics</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<note type="install"><![CDATA[
+		Work ONLY on MySQL databases. Tested on MySQL 5.
+	]]></note>
+
+
+	<install><![CDATA[
+		$no_prefix = false;
+		$table_name = 'topics';
+		$index_name = 'ft_topics_subject';
+		$index_fields = array('subject');
+
+		if (!$forum_db->index_exists('topics', 'ft_topics_subject', $no_prefix)) {
+			$forum_db->query('ALTER TABLE '.($no_prefix ? '' : $db_prefix).$table_name.' ADD FULLTEXT INDEX '.($no_prefix ? '' : $db_prefix).$table_name.'_'.$index_name.' ('.implode(',', $index_fields).')') or error(__FILE__, __LINE__);
+		}
+
+		$forum_db->add_field('forums', 'fancy_simtopics_show', 'bool', false, 1);
+		$forum_db->add_field('forums', 'fancy_simtopics_search', 'bool', false, 1);
+		$forum_db->add_field('users', 'fancy_simtopics_enable', 'bool', false, 1);
+
+		if (!isset($forum_config['o_fancy_simtopics_num_topics'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_simtopics_num_topics\', \'5\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		if (!isset($forum_config['o_fancy_simtopics_time_topics'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_simtopics_time_topics\', \'365\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		if (!isset($forum_config['o_fancy_simtopics_one_forum'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_simtopics_one_forum\', \'1\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		if (!isset($forum_config['o_fancy_simtopics_show_for_guest'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_simtopics_show_for_guest\', \'0\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_index('topics', 'ft_topics_subject', false);
+
+		$forum_db->drop_field('forums', 'fancy_simtopics_show');
+		$forum_db->drop_field('forums', 'fancy_simtopics_search');
+		$forum_db->drop_field('users', 'fancy_simtopics_enable');
+
+		// Delete extension options from the config
+		$query = array(
+			'DELETE'	=> 'config',
+			'WHERE'		=> 'conf_name in (\'o_fancy_simtopics_num_topics\', \'o_fancy_simtopics_time_topics\', \'o_fancy_simtopics_one_forum\', \'o_fancy_simtopics_show_for_guest\')',
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+	]]></uninstall>
+
+
+	<hooks>
+			<hook id="es_essentials"><![CDATA[
+				include_once $ext_info['path'].'/functions.inc.php';
+			]]></hook>
+
+			<!-- STYLE -->
+			<hook id="hd_head"><![CDATA[
+			if (FORUM_PAGE == 'viewtopic') {
+				$forum_head['fancy_simtopics_css'] = '<style>
+					#fancy_simtopics_block {
+						margin: 1em 0 1.5em;
+					}
+
+					#fancy_simtopics_block ul {
+						list-style: none;
+					}
+
+					#fancy_simtopics_block h3 {
+						font-size: 1.1em;
+					}
+				</style>';
+			}
+		]]></hook>
+
+			<!-- LOAD LANG -->
+			<hook id="vt_start"><![CDATA[
+				if (!isset($lang_fancy_simtopics)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			]]></hook>
+
+			<!-- SHOW IN THIS FORUM -->
+			<hook id="vt_qr_get_topic_info"><![CDATA[
+				$query['SELECT'] .= ', f.fancy_simtopics_show';
+			]]></hook>
+
+
+			<hook id="vt_pre_header_load"><![CDATA[
+				if ($cur_topic['fancy_simtopics_show'] == '1') {
+					if ((!$forum_user['is_guest'] && $forum_user['fancy_simtopics_enable']) || ($forum_user['is_guest'] && intval($forum_config['o_fancy_simtopics_show_for_guest']) === 1)) {
+						$fancy_simtopics = new Fancy_simtopics;
+						$fancy_simtopics_links = $fancy_simtopics->get_simtopics($cur_topic['subject'], $cur_topic['forum_id'], $id);
+					}
+				}
+			]]></hook>
+
+
+			<hook id="hd_main_elements"><![CDATA[
+				if (isset($fancy_simtopics_links)) {
+					$main_elements['<!-- forum_crumbs_end -->'] .= $fancy_simtopics_links;
+				}
+			]]></hook>
+
+			<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+				if (!isset($lang_fancy_simtopics)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				if ($ext['id'] == 'fancy_simtopics' && !isset($forum_page['ext_actions']['fancy_simtopics_settings'])) {
+					$forum_page['ext_actions']['fancy_simtopics_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_simtopics['Go to settings'].'</a></span>';
+				}
+			]]></hook>
+
+			<!-- SETTINGS -->
+			<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+				if (!isset($lang_fancy_simtopics)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $lang_fancy_simtopics['Settings Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><span><?php echo $lang_fancy_simtopics['Settings Name'] ?></span></legend>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_simtopics_show_for_guest]" value="1"<?php if ($forum_config['o_fancy_simtopics_show_for_guest'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_simtopics['Settings Show for guest'] ?></label>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_simtopics_one_forum]" value="1"<?php if ($forum_config['o_fancy_simtopics_one_forum'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_simtopics['Settings One Forum'] ?></label>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box sf-short text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+								<span><?php echo $lang_fancy_simtopics['Settings Num Name'] ?></span>
+								<small><?php echo $lang_fancy_simtopics['Settings Num Help'] ?></small>
+							</label><br/>
+							<span class="fld-input">
+								<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_simtopics_num_topics]" size="3" maxlength="3" value="<?php echo intval($forum_config['o_fancy_simtopics_num_topics'], 10) ?>"/>
+							</span>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box sf-short text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+								<span><?php echo $lang_fancy_simtopics['Settings Time Name'] ?></span>
+								<small><?php echo $lang_fancy_simtopics['Settings Time Help'] ?></small>
+							</label><br/>
+							<span class="fld-input">
+								<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_simtopics_time_topics]" size="3" maxlength="4" value="<?php echo intval($forum_config['o_fancy_simtopics_time_topics'], 10) ?>"/>
+							</span>
+						</div>
+					</div>
+
+
+				</fieldset>
+<?php
+			]]></hook>
+
+			<hook id="aop_features_validation"><![CDATA[
+				$form['fancy_simtopics_num_topics'] = intval($form['fancy_simtopics_num_topics'], 10);
+				$form['fancy_simtopics_time_topics'] = intval($form['fancy_simtopics_time_topics'], 10);
+				$form['fancy_simtopics_one_forum'] = (!isset($form['fancy_simtopics_one_forum']) || intval($form['fancy_simtopics_one_forum'], 10) <= 0) ? '0' : '1';
+				$form['fancy_simtopics_show_for_guest'] = (!isset($form['fancy_simtopics_show_for_guest']) || intval($form['fancy_simtopics_show_for_guest'], 10) <= 0) ? '0' : '1';
+			]]></hook>
+
+
+		<hook id="afo_edit_forum_qr_get_forum_details"><![CDATA[
+			$query['SELECT'] .= ', f.fancy_simtopics_show, f.fancy_simtopics_search';
+		]]></hook>
+
+			<hook id="afo_edit_forum_details_fieldset_end"><![CDATA[
+				if (!isset($lang_fancy_simtopics)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$fancy_simtopics_show_checkbox_value = (intval($cur_forum['fancy_simtopics_show'], 10) === 1) ? 'value="1" checked="checked"' : 'value="0"';
+				$fancy_simtopics_search_checkbox_value = (intval($cur_forum['fancy_simtopics_search'], 10) === 1) ? 'value="1" checked="checked"' : 'value="0"';
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+			?>
+				<div class="content-head">
+					<h3 class="hn"><span><?php echo $lang_fancy_simtopics['Edit forum settings head']; ?></span></h3>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><strong><?php echo $lang_fancy_simtopics['Edit forum settings legend']; ?></strong></legend>
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_simtopics['Forum Settings Show'] ?></span></label><br />
+							<span class="fld-input"><?php echo '<input type="checkbox" id="fld'.$forum_page['fld_count'].'" name="fancy_simtopics_show"'.$fancy_simtopics_show_checkbox_value.'/>'; ?></span>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_simtopics['Forum Settings Search'] ?></span></label><br />
+							<span class="fld-input"><?php echo '<input type="checkbox" id="fld'.$forum_page['fld_count'].'" name="fancy_simtopics_search"'.$fancy_simtopics_search_checkbox_value.'/>'; ?></span>
+						</div>
+					</div>
+				</fieldset>
+			<?php
+		]]></hook>
+
+
+		<!-- Get parameters -->
+		<hook id="afo_save_forum_form_submitted"><![CDATA[
+			$fancy_simtopics_show = (isset($_POST['fancy_simtopics_show']) ? 1 : 0);
+			$fancy_simtopics_search = (isset($_POST['fancy_simtopics_search']) ? 1 : 0);
+		]]></hook>
+
+
+		<!-- Modify Query -->
+		<hook id="afo_save_forum_qr_update_forum"><![CDATA[
+			$query['SET'] .= ', fancy_simtopics_show='.$fancy_simtopics_show;
+			$query['SET'] .= ', fancy_simtopics_search='.$fancy_simtopics_search;
+		]]></hook>
+
+		<!-- PROFILE -->
+		<hook id="pf_change_details_settings_email_fieldset_end"><![CDATA[
+			if (!isset($lang_fancy_simtopics)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$forum_page['item_count'] = 0;
+?>
+			<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_simtopics_enable]" value="1"<?php if ($user['fancy_simtopics_enable'] == '1') echo ' checked="checked"' ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_simtopics['Enable For User Name'] ?></span><?php echo $lang_fancy_simtopics['Enable For User Help'] ?></label>
+					</div>
+				</div>
+			</fieldset>
+<?php
+		]]></hook>
+
+		<hook id="pf_change_details_settings_validation"><![CDATA[
+			if (!isset($_POST['form']['fancy_simtopics_enable']) || $_POST['form']['fancy_simtopics_enable'] != '1') {
+				$form['fancy_simtopics_enable'] = '0';
+			} else {
+				$form['fancy_simtopics_enable'] = '1';
+			}
+		]]></hook>
+
+	</hooks>
+</extension>
