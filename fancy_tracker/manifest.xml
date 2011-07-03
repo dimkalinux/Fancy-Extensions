@@ -1,0 +1,1053 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_tracker</id>
+	<title>Fancy Bittorrent Tracker</title>
+	<version>0.8.23</version>
+	<description>Simple BitTorrent tracker.</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<dependencies>
+		<dependency>jquery</dependency>
+	</dependencies>
+
+	<note type="uninstall" timing="pre">WARNING! All users torrent-files will be removed during the uninstall process. It is strongly recommended you to disable «Fancy Bittorrent Tracker» extension instead or to upgrade it without uninstalling.</note>
+
+	<install><![CDATA[
+		if (!$forum_db->table_exists('torrents')) {
+			$schema = array(
+				'FIELDS'	=>	array(
+					'id'			=> array(
+					'datatype'	=> 'SERIAL',
+					'allow_null'	=> false
+					),
+					'info_hash'	=>	array(
+						'datatype'	=> 'VARCHAR(40)',
+						'allow_null'	=> false,
+						'default'	=> '\'\'',
+					),
+					'announce_url'	=>	array(
+						'datatype'	=> 'VARCHAR(255)',
+						'allow_null'	=> false,
+						'default'	=> '\'\'',
+					),
+					'date_added'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'poster_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '1',
+					),
+					'poster_ip'	=>	array(
+						'datatype'	=> 'VARCHAR(39)',
+						'allow_null'	=> false,
+						'default'	=>	'\'0.0.0.0\'',
+					),
+					'name'		=>	array(
+						'datatype'	=> 'VARCHAR(255)',
+						'allow_null'	=> false,
+						'default'	=> '\'\'',
+					),
+					'num_files'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '1',
+					),
+					'size'		=>	array(
+						'datatype'	=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'last_action'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'completed'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'uploaded'	=>	array(
+						'datatype'	=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'downloaded'	=>	array(
+						'datatype'	=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+				),
+				'PRIMARY KEY'	=>	array('id')
+			);
+			$forum_db->create_table('torrents', $schema);
+		}
+
+		if (!$forum_db->table_exists('peers')) {
+			$schema = array(
+				'FIELDS'		=>	array(
+					'info_hash'		=>	array(
+						'datatype'		=> 'VARCHAR(40)',
+						'allow_null'	=> false,
+						'default'		=> '\'\'',
+					),
+					'user_id'		=>	array(
+						'datatype'		=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'		=> '1',
+					),
+					'peer_id'		=>	array(
+						'datatype'		=> 'VARCHAR(40)',
+						'allow_null'	=> false,
+						'default'		=> '\'\'',
+					),
+					'ip'			=>	array(
+						'datatype'		=> 'VARCHAR(39)',
+						'allow_null'	=> false,
+						'default'		=>	'\'0.0.0.0\'',
+					),
+					'port'			=>	array(
+						'datatype'		=> 'INT(5)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'uploaded'		=>	array(
+						'datatype'		=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'downloaded'	=>	array(
+						'datatype'		=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'remaining'		=>	array(
+						'datatype'		=> 'BIGINT(20)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'started'		=>	array(
+						'datatype'		=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'last_action'	=>	array(
+						'datatype'		=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'agent'			=>	array(
+						'datatype'		=> 'VARCHAR(255)',
+						'allow_null'	=> false,
+						'default'		=> '\'\'',
+					),
+					'connectable'	=>	array(
+						'datatype'		=> 'TINYINT(1)',
+						'allow_null'	=> false,
+						'default'		=> '1',
+					),
+				),
+				'PRIMARY KEY'	=>	array('info_hash', 'peer_id'),
+				'ENGINE'	=>	'MEMORY'
+			);
+			$forum_db->create_table('peers', $schema);
+		}
+
+
+		if (!$forum_db->table_exists('snatches')) {
+			$schema = array(
+				'FIELDS'	=>	array(
+					'id'			=>	array(
+						'datatype'		=> 'SERIAL',
+						'allow_null'	=> false,
+					),
+					'info_hash'		=>	array(
+						'datatype'		=> 'VARCHAR(40)',
+						'allow_null'	=> false,
+						'default'		=> '\'\'',
+					),
+					'peer_id'		=>	array(
+						'datatype'		=> 'VARCHAR(40)',
+						'allow_null'	=> false,
+						'default'		=> '\'\'',
+					),
+					'user_id'		=>	array(
+						'datatype'		=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'		=> '1',
+					),
+					'time'		=>	array(
+						'datatype'		=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+					'ip'		=>	array(
+						'datatype'		=> 'VARCHAR(39)',
+						'allow_null'	=> false,
+						'default'		=> '\'0.0.0.0\'',
+					),
+				),
+				'PRIMARY KEY'	=>	array('id')
+			);
+			$forum_db->create_table('snatches', $schema);
+		}
+
+		$forum_db->add_field('groups', 'g_use_tracker', 'TINYINT(1)', false, 1);
+		$forum_db->add_field('groups', 'g_upload_torrents', 'TINYINT(1)', false, 1);
+
+		$query = array(
+			'UPDATE'	=>	'groups',
+			'SET'		=>	'g_use_tracker=0, g_upload_torrents=0',
+			'WHERE'		=>	'g_id='.FORUM_GUEST
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		$forum_db->add_field('users', 'passkey', 'VARCHAR(32)', true);
+		$forum_db->add_field('users', 'uploaded', 'BIGINT(20)', false, 0);
+		$forum_db->add_field('users', 'downloaded', 'BIGINT(20)', false, 0);
+
+		$query = array(
+			'UPDATE'	=>	'users',
+			'SET'		=>	'passkey = \'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\'',
+			'WHERE'		=>	'id = 1'
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		// CONFIG o_fancy_tracker_peer_request_count
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_peer_request_count\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_peer_request_count\', \'100\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+
+		// CONFIG o_fancy_tracker_enable_scrape
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_enable_scrape\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_enable_scrape\', \'0\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+
+		// CONFIG o_fancy_tracker_allow_submit_ip
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_allow_submit_ip\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_allow_submit_ip\', \'1\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		// CONFIG o_fancy_tracker_use_retracker
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_use_retracker\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_use_retracker\', \'0\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+
+		// CONFIG o_fancy_tracker_announce_interval
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_announce_interval\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_announce_interval\', \'1800\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+
+		// CONFIG o_fancy_tracker_update_stats_interval
+		$query = array(
+			'SELECT'	=>	'1',
+			'FROM'		=>	'config',
+			'WHERE'		=>	'conf_name = \'o_fancy_tracker_update_stats_interval\''
+		);
+		$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		if ($forum_db->num_rows($result) == 0) {
+			$query = array(
+				'INSERT'	=>	'conf_name, conf_value',
+				'INTO'		=>	'config',
+				'VALUES'	=>	'\'o_fancy_tracker_update_stats_interval\', \'15\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		$forum_db->add_field('forums', 'is_torrent', 'TINYINT(1)', false, 0);
+		$forum_db->add_field('topics', 'torrent_id', 'BIGINT(20)', true, 0);
+
+		// UPDATE FOR OLD VERSIONS
+		if (defined('EXT_CUR_VERSION') && version_compare(EXT_CUR_VERSION, '0.2', '<')) {
+			// UPDATE CONFIG - DROP OLD CONFIG VALUES
+			$query = array(
+				'DELETE'	=>	'config',
+				'WHERE'		=>	'conf_name IN (\'o_peer_request_count\', \'o_allow_submit_ip\', \'o_announce_interval\')'
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		// UPDATE FOR OLD VERSIONS
+		if (defined('EXT_CUR_VERSION') && version_compare(EXT_CUR_VERSION, '0.8', '<')) {
+			$forum_db->drop_index('forums', 'i_is_torrent');
+			// UPDATE CONFIG - MODIFY is_torrent
+			$forum_db->query('ALTER TABLE '.$forum_db->prefix.'forums MODIFY is_torrent TINYINT(1) NOT NULL DEFAULT \'0\'') or error(__FILE__, __LINE__);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_table('torrents');
+		$forum_db->drop_table('peers');
+		$forum_db->drop_table('snatches');
+
+		$forum_db->drop_index('forums', 'i_is_torrent');
+		$forum_db->drop_field('forums', 'is_torrent');
+
+		$forum_db->drop_field('topics', 'torrent_id');
+
+		$forum_db->drop_field('groups', 'g_use_tracker');
+		$forum_db->drop_field('groups', 'g_upload_torrents');
+
+		$forum_db->drop_field('users', 'passkey');
+		$forum_db->drop_field('users', 'uploaded');
+		$forum_db->drop_field('users', 'downloaded');
+
+		$query = array(
+			'DELETE'	=>	'config',
+			'WHERE'		=>	'conf_name IN (\'o_peer_request_count\', \'o_fancy_tracker_enable_scrape\', \'o_fancy_tracker_use_retracker\', \'o_allow_submit_ip\', \'o_announce_interval\', \'o_fancy_tracker_peer_request_count\', \'o_fancy_tracker_allow_submit_ip\', \'o_fancy_tracker_update_stats_interval\', \'o_fancy_tracker_announce_interval\')'
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		$torrents = glob($ext_info['path'].'/torrents/*.torrent');
+		foreach ($torrents as $torrent) {
+			@unlink($torrent);
+		}
+	]]></uninstall>
+
+	<hooks>
+		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($ext['id'] == 'fancy_tracker' && !isset($forum_page['ext_actions']['fancy_tracker_settings'])) {
+				$forum_page['ext_actions']['fancy_tracker_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_tracker['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+		<hook id="pf_qr_get_user_info"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+		]]></hook>
+
+		<hook id="pf_change_details_about_pre_header_load"><![CDATA[
+			if ($forum_page['own_profile'] || $forum_user['g_id'] == FORUM_ADMIN) {
+				$forum_page['user_activity']['search_torrents'] = '<li><a href="'.forum_link($forum_url['user-torrents-search'], $id).'">'.(($forum_page['own_profile']) ? $lang_tracker['View your torrents'] : sprintf($lang_tracker['View user torrents'], forum_htmlencode($user['username']))).'</a></li>';
+			}
+		]]></hook>
+
+		<hook id="pf_view_details_pre_header_load"><![CDATA[
+			// $forum_page['user_activity']['search_torrents'] = '<li><a href="'.forum_link($forum_url['user-torrents-search'], $id).'">'.sprintf($lang_tracker['View user torrents'], forum_htmlencode($user['username'])).'</a></li>';
+		]]></hook>
+
+
+		<hook id="sf_fn_validate_actions_start"><![CDATA[
+			$valid_actions[] = 'show_user_torrents';
+		]]></hook>
+
+		<hook id="se_additional_quicksearch_variables"><![CDATA[
+			if ($action == 'show_user_torrents') {
+				$value = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+				if ($value < 2)
+					message($lang_common['Bad request']);
+			}
+		]]></hook>
+
+		<hook id="sf_fn_generate_action_search_query_start"><![CDATA[
+			if ($action == 'show_user_torrents') {
+				if ($forum_user['is_guest']) {
+					message($lang_common['Bad request']);
+				}
+
+				// Check we're allowed to see the subscriptions we're trying to look at
+				if ($forum_user['g_id'] != FORUM_ADMIN && $forum_user['id'] != $value) {
+					message($lang_common['Bad request']);
+				}
+
+				$query = array(
+					'SELECT'	=> 't.id AS tid, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.closed, t.sticky, t.forum_id, t.torrent_id, f.forum_name',
+					'FROM'		=> 'topics AS t',
+					'JOINS'		=> array(
+						array(
+							'INNER JOIN'	=> 'posts AS p',
+							'ON'			=> 't.first_post_id=p.id'
+						),
+						array(
+							'INNER JOIN'	=> 'forums AS f',
+							'ON'			=> 'f.id=t.forum_id'
+						),
+						array(
+							'LEFT JOIN'		=> 'forum_perms AS fp',
+							'ON'			=> '(fp.forum_id=f.id AND fp.group_id='.$forum_user['g_id'].')'
+						)
+					),
+					'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1) AND t.torrent_id > 0 AND p.poster_id='.$value,
+					'ORDER BY'	=> 't.last_post DESC'
+				);
+
+				// With "has posted" indication
+				if (!$forum_user['is_guest'] && $forum_config['o_show_dot'] == '1')
+				{
+					$subquery = array(
+						'SELECT'	=> 'COUNT(p.id)',
+						'FROM'		=> 'posts AS p',
+						'WHERE'		=> 'p.poster_id='.$forum_user['id'].' AND p.topic_id=t.id'
+					);
+
+					($hook = get_hook('sf_fn_generate_action_search_query_qr_get_user_topics_has_posted')) ? eval($hook) : null;
+					$query['SELECT'] .= ', ('.$forum_db->query_build($subquery, true).') AS has_posted';
+				}
+
+				$url_type = $forum_url['user-torrents-search'];
+				$search_id = $value;
+			}
+		]]></hook>
+
+
+		<hook id="sf_fn_generate_search_crumbs_start"><![CDATA[
+			global $lang_tracker;
+
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($action == 'show_user_torrents') {
+				$forum_page['crumbs'][] = sprintf($lang_tracker['Torrents by'], $search_set[0]['poster']);
+				$forum_page['items_info'] = generate_items_info($lang_tracker['Torrents found'], ($forum_page['start_from'] + 1), $num_hits);
+				$forum_page['main_head_options']['user_posts'] =  '<span'.(empty($forum_page['main_head_options']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['user-torrents-search'], $search_id).'">'.sprintf($lang_tracker['Torrents by'], forum_htmlencode($search_set[0]['poster'])).'</a></span>';
+				$forum_page['main_head_options']['defined_search'] = '<span'.(empty($forum_page['main_head_options']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['search']).'">'.$lang_search['User defined search'].'</a></span>';
+				return TRUE;
+			}
+		]]></hook>
+
+		<hook id="sf_fn_no_search_results_start"><![CDATA[
+			global $forum_user;
+
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($action == 'show_user_torrents') {
+				message($lang_tracker['No user torrents'], $forum_page['search_again'], $lang_tracker['Torrents by user']);
+				return TRUE;
+			}
+		]]></hook>
+
+		<hook id="pf_change_details_about_pre_user_sig_info"><![CDATA[
+			$forum_page['user_torrent'] = array();
+
+			// Fetch info about the user whose profile we're viewing
+			$query = array(
+				'SELECT'	=> 'COUNT(id) AS num_torrents',
+				'FROM'		=> 'torrents AS t',
+				'WHERE'		=> 't.poster_id='.$id
+			);
+
+			$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+			if ($forum_db->num_rows($result)) {
+				$torrent_info = $forum_db->fetch_assoc($result);
+				$forum_page['user_torrent']['created_torrent'] = '<li><span>'.$lang_tracker['Torrent stat created'].': <strong>'.forum_number_format($torrent_info['num_torrents']).'</strong></span></li>';
+			}
+
+
+			$forum_page['user_torrent']['upload_byte'] = '<li><span>'.$lang_tracker['Torrent stat upload'].': <strong>'.Fancy_Tracker::bytestostring($user['uploaded'], 2).'</strong></span></li>';
+			$forum_page['user_torrent']['download_byte'] = '<li><span>'.$lang_tracker['Torrent stat download'].': <strong>'.Fancy_Tracker::bytestostring($user['downloaded'], 2).'</strong></span></li>';
+?>
+			<div id="private-profile" class="ct-set data-set set<?php echo ++$forum_page['item_count'] ?>">
+				<div class="ct-box data-box">
+					<h3 class="ct-legend hn"><span><?php echo $lang_tracker['User torrent info'] ?></span></h3>
+					<ul class="data-list">
+						<?php echo implode("\n\t\t\t\t\t\t", $forum_page['user_torrent'])."\n" ?>
+					</ul>
+				</div>
+			</div>
+<?php
+		]]></hook>
+
+
+		<hook id="agr_add_edit_group_pre_allow_search_users_checkbox"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+?>
+			<div class="mf-item">
+				<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="use_tracker" value="1"<?php if ($group['g_use_tracker'] == '1') echo ' checked="checked"' ?> /></span>
+				<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_tracker['Allow use tracker'] ?></label>
+			</div>
+			<div class="mf-item">
+				<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="upload_torrents" value="1"<?php if ($group['g_upload_torrents'] == '1') echo ' checked="checked"' ?> /></span>
+				<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_tracker['Allow upload torrents'] ?></label>
+			</div>
+<?php
+		]]></hook>
+
+		<hook id="agr_add_edit_end_validation"><![CDATA[
+			$use_tracker = (isset($_POST['use_tracker']) && $_POST['use_tracker'] == '1') || $is_admin_group ? '1' : '0';
+			$upload_torrents = (isset($_POST['upload_torrents']) && $_POST['upload_torrents'] == '1') || $is_admin_group ? '1' : '0';
+		]]></hook>
+		<hook id="agr_add_end_qr_add_group"><![CDATA[
+			$query['INSERT'] .= ', g_use_tracker, g_upload_torrents';
+			$query['VALUES'] .= ', '.$use_tracker.', '.$upload_torrents;
+		]]></hook>
+		<hook id="agr_edit_end_qr_update_group"><![CDATA[
+			$query['SET'] .= ', g_use_tracker='.$use_tracker.', g_upload_torrents='.$upload_torrents;
+		]]></hook>
+
+
+		<hook id="hd_head"><![CDATA[
+			if (FORUM_PAGE == 'viewtopic' && defined('IS_TORRENT_TOPIC') && $forum_user['g_use_tracker'] == '1') {
+				if (file_exists($ext_info['path'].'/styles/'.$forum_user['style'].'/style.css')) {
+					$forum_head['style_fancy_tracker'] = '<link rel="stylesheet" type="text/css" media="screen" href="'.$ext_info['url'].'/styles/'.$forum_user['style'].'/style.css"/>';
+				} else {
+					$forum_head['style_fancy_tracker'] = '<link rel="stylesheet" type="text/css" media="screen" href="'.$ext_info['url'].'/styles/Oxygen/style.css"/>';
+				}
+
+				// MINIMUM 10 seconds
+				if (intval($forum_config["o_fancy_tracker_update_stats_interval"], 10) < 10) {
+					$forum_config["o_fancy_tracker_update_stats_interval"] = 10;
+				}
+
+				$js_fancy_tracker = $ext_info['url'].'/fancy_tracker.js';
+				$forum_head['fancy_tracker_js'] = '<script type="text/javascript">
+					if (typeof FORUM === "undefined" || !FORUM) {
+						var FORUM = {};
+					}
+
+					FORUM.fancy_tracker = FORUM.fancy_tracker || {};
+
+					FORUM.fancy_tracker.env = FORUM.fancy_tracker.env || {
+						misc_url: "'.$base_url.'/misc.php",
+						script_url: "'.$js_fancy_tracker.'",
+						first_update_interval: "'.intval($forum_config["o_fancy_tracker_update_stats_interval"]/2, 10).'s",
+						update_interval: "'.intval($forum_config["o_fancy_tracker_update_stats_interval"], 10).'s",
+					};
+
+					FORUM.fancy_tracker.load = function () {
+						return {
+							loadScript: function (pause, name, script, useCache, callback) {
+								$(document).oneTime(pause, name, function () {
+									$.ajaxSetup({cache: useCache});
+									$.getScript(script, function () {
+										if (typeof callback == "function") {
+											callback();
+										}
+									});
+									// revert to default
+									$.ajaxSetup({cache: false});
+								});
+							}
+						}
+					}();
+
+					jQuery(function ($) {
+						FORUM.fancy_tracker.load.loadScript(1000, "fancy_tracker", FORUM.fancy_tracker.env.script_url, false, function () {
+							$("#brd-wrap").oneTime(FORUM.fancy_tracker.env.first_update_interval, "fancy_tracker_get_stats_once", FORUM.fancy_tracker.functions.updateTrackerStats);
+							$("#brd-wrap").everyTime(FORUM.fancy_tracker.env.update_interval, "fancy_tracker_get_stats", FORUM.fancy_tracker.functions.updateTrackerStats);
+						});
+					});
+			 	</script>';
+			}
+		]]></hook>
+
+		<!-- DELETE TOPIC AND TORRENT -->
+		<hook id="dl_qr_get_post_info"><![CDATA[
+			$query['SELECT'] .= ', tr.info_hash, t.torrent_id';
+			$query['JOINS'][] = array(
+				'LEFT JOIN'	=> 'torrents AS tr',
+				'ON'		=> '(tr.id= t.torrent_id)'
+			);
+		]]></hook>
+
+		<hook id="dl_topic_deleted_pre_redirect"><![CDATA[
+			$torrentID = intval($cur_post['torrent_id'], 10);
+
+			if ($torrentID > 0) {
+				$delQuery = array(
+					'DELETE'	=> 'torrents',
+					'WHERE'		=> 'id='.$torrentID
+				);
+
+				$forum_db->query_build($delQuery) or error(__FILE__, __LINE__);
+
+				// REMOVE TORRENT FILE
+				$torrentHash = $cur_post['info_hash'];
+				$torrentFile = $ext_info['path'].'/torrents/'.$torrentHash.'.torrent';
+				if (file_exists($torrentFile)) {
+					unlink($torrentFile);
+				}
+			}
+		]]></hook>
+
+
+		<hook id="vt_row_pre_display"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if (($forum_user['g_use_tracker'] == '1') && $cur_topic['torrent_id'] && ($cur_post['id'] == $cur_topic['first_post_id'])) {
+				// GET TORRENT INFO
+				$torrentQuery = array(
+					'SELECT'	=>	't.*',
+					'FROM'		=>	'torrents AS t',
+					'WHERE'		=>	't.id = \''.$forum_db->escape($cur_topic['torrent_id']).'\''
+				);
+
+				$torrentResult = $forum_db->query_build($torrentQuery) or error(__FILE__, __LINE__);
+				if (!$forum_db->num_rows($torrentResult)) {
+					message($lang_common['Bad request']);
+				}
+
+				$torrent = $forum_db->fetch_assoc($torrentResult);
+				$torrent['get_url'] = ' <a title="'.$lang_tracker['Download torrent'].'" href="'.forum_link($forum_url['torrents-get'], $torrent['info_hash']).'">'.$lang_tracker['Download'].'</a>';
+				$torrent['get_url_owner'] = ' <a title="'.$lang_tracker['Download torrent'].'" href="'.forum_link($forum_url['torrents-get'], $torrent['info_hash']).'">'.$lang_tracker['Download Owner Nag'].'</a>';
+				$torrent['seeds'] = $torrent['leechers'] = array();
+
+				// GET TORRENT PEERS INFO
+				$peersQuery = array(
+					'SELECT'	=>	'p.*, u.username',
+					'FROM'		=>	'peers AS p',
+					'JOINS'		=>	array(
+						array(
+							'INNER JOIN'	=>	'users AS u',
+							'ON'		=>	'u.id = p.user_id'
+						),
+					),
+					'WHERE'		=>	'p.info_hash = \''.$forum_db->escape($torrent['info_hash']).'\''
+				);
+
+				$peersResult = $forum_db->query_build($peersQuery) or error(__FILE__, __LINE__);
+				while ($cur_peer = $forum_db->fetch_assoc($peersResult)) {
+					$torrent[$cur_peer['remaining'] == 0 ? 'seeds' : 'leechers'][] = $cur_peer;
+				}
+
+				$torrentOwnerID = $cur_post['poster_id'];
+				$torrentInfoSeed = '<div>'.((count($torrent['seeds']) == 1) ? $lang_tracker['seed'] : $lang_tracker['seeds']).': <span id="torrentSeedNum">'.forum_number_format(count($torrent['seeds'])).'</span>, ';
+				$torrentInfoLeech = ((count($torrent['leechers']) == 1) ? $lang_tracker['leech'] : $lang_tracker['leechers']).': <span id="torrentLeechNum">'.forum_number_format(count($torrent['leechers'])).'</span>';
+				$torrentInfoSize = '<br/>'.sprintf($lang_tracker['Size'], Fancy_Tracker::bytestostring($torrent['size'], 2), $torrent['num_files']);
+				$torrentInfoDownload = '<br/><br/>'.$torrent['get_url'].'</div>';
+				$torrentInfoDownloads = '<br/>'.$lang_tracker['Torrent info download'].':&nbsp;'.forum_number_format($torrent['completed']);
+
+				// hidden by default
+				$torrentsSeedNagStyle = 'display: none;';
+				if ($torrentOwnerID == $forum_user['id']) {
+					$torrentOwnerIsSeed = FALSE;
+					if (count($torrent['seeds']) > 0) {
+						foreach ($torrent['seeds'] as $torrent_seed) {
+							if (($torrent_seed['user_id'] == $torrentOwnerID) && ($torrent_seed['remaining'] == 0)) {
+								$torrentOwnerIsSeed = TRUE;
+								break;
+							}
+						}
+					}
+
+					if (!$torrentOwnerIsSeed) {
+						$torrentsSeedNagStyle = 'display: block;';
+					}
+				}
+
+				$torrentsSeedNag = '<div class="ct-box info-box" id="torrentOwnerNag" style="'.$torrentsSeedNagStyle.'"><p class="important">'.sprintf($lang_tracker['Torrent Seed Nag Owner'], $torrent['get_url_owner']).'</p></div>';
+
+				$torrentBlock = <<<FMB
+				<div class="torrentbox" rel="{$torrent['info_hash']}" owner_id="{$torrentOwnerID}" id="torrentCurrentHash">
+					<cite>{$lang_tracker['Torrent info']}</cite>
+					$torrentInfoSeed $torrentInfoLeech
+					$torrentInfoSize
+					$torrentInfoDownloads
+					$torrentInfoDownload
+				</div>
+FMB;
+				$forum_page['message']['message'] = $torrentsSeedNag.$forum_page['message']['message'].$torrentBlock;
+			}
+		]]></hook>
+
+		<hook id="vt_qr_get_topic_info"><![CDATA[
+			$query['SELECT'] .= ', tr.info_hash, tr.num_files, tr.size, t.torrent_id';
+			$query['JOINS'][] = array(
+				'LEFT JOIN'	=> 'torrents AS tr',
+				'ON'		=> '(tr.id= t.torrent_id)'
+			);
+		]]></hook>
+
+		<hook id="afo_edit_forum_pre_details_fieldset_end"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+?>
+			<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+				<div class="sf-box select">
+					<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+						<span><?php echo $lang_tracker['Torrent Mode'] ?></span>
+					</label><br/>
+					<span class="fld-input">
+						<select id="fld<?php echo $forum_page['fld_count'] ?>" name="fancy_tracker_forum_torrent_mode">
+						<?php
+							$fancy_tracker_forum_torrent_modes = array(FANCY_TRACKER_FORUM_MODE_NO_TORRENTS, FANCY_TRACKER_FORUM_MODE_ONLY_TORRENTS, FANCY_TRACKER_FORUM_MODE_TORRENTS_AND_POSTS);
+							foreach ($fancy_tracker_forum_torrent_modes as $fancy_tracker_forum_torrent_mode) {
+								if (intval($cur_forum['is_torrent'] , 10) === $fancy_tracker_forum_torrent_mode) {
+									echo "\t\t\t\t\t\t\t\t".'<option value="'.$fancy_tracker_forum_torrent_mode.'" selected="selected">'.$lang_tracker["Forum Mode {$fancy_tracker_forum_torrent_mode}"].'</option>'."\n";
+								} else {
+									echo "\t\t\t\t\t\t\t\t".'<option value="'.$fancy_tracker_forum_torrent_mode.'">'.$lang_tracker["Forum Mode {$fancy_tracker_forum_torrent_mode}"].'</option>'."\n";
+								}
+							}
+						?>
+						</select>
+					</span>
+				</div>
+			</div>
+<?php
+		]]></hook>
+
+		<hook id="afo_edit_forum_qr_get_forum_details"><![CDATA[
+			$query['SELECT'] .= ', f.is_torrent';
+		]]></hook>
+
+		<hook id="afo_save_forum_form_submitted"><![CDATA[
+			$fancy_tracker_forum_torrent_mode = intval($_POST['fancy_tracker_forum_torrent_mode'] , 10);
+			if ($fancy_tracker_forum_torrent_mode > 2) {
+				$fancy_tracker_forum_torrent_mode = 0;
+			}
+		]]></hook>
+
+		<hook id="afo_save_forum_qr_update_forum"><![CDATA[
+			$query['SET'] .= ", is_torrent='".$fancy_tracker_forum_torrent_mode."'";
+		]]></hook>
+
+
+
+		<hook id="vf_qr_get_forum_info"><![CDATA[
+			$query['SELECT'] .= ', f.is_torrent';
+		]]></hook>
+
+
+		<hook id="vf_modify_page_details"><![CDATA[
+			$fancy_tracker_forum_torrent_mode = intval($cur_forum['is_torrent'], 10);
+
+			$forum_user['may_torrent'] = (($fancy_tracker_forum_torrent_mode === FANCY_TRACKER_FORUM_MODE_ONLY_TORRENTS || $fancy_tracker_forum_torrent_mode === FANCY_TRACKER_FORUM_MODE_TORRENTS_AND_POSTS) && $forum_user['g_upload_torrents'] == '1')  ? TRUE : FALSE;
+		]]></hook>
+
+		<hook id="vf_pre_header_load"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			// OK
+			$fancy_tracker_link_may_post = '<a class="newpost" href="'.forum_link($forum_url['new_topic'], $id).'"><span>'.$lang_forum['Post topic'].'</span></a>';
+			$fancy_tracker_link_may_torrent = '<a class="newpost" href="'.forum_link($forum_url['torrents-upload'], $id).'"><span>'.$lang_tracker['Upload torrent'].'</span></a>';
+			// NOT
+			$fancy_tracker_link_cant_post = '';
+			$fancy_tracker_link_cant_torrent = '';
+
+			if ($fancy_tracker_forum_torrent_mode === FANCY_TRACKER_FORUM_MODE_ONLY_TORRENTS) {
+				if ($forum_user['may_torrent']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.$fancy_tracker_link_may_torrent.'</p>';
+				} else if ($forum_user['is_guest']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.sprintf($lang_tracker['Login to post'], '<a href="'.forum_link($forum_url['login']).'">'.$lang_common['login'].'</a>', '<a href="'.forum_link($forum_url['register']).'">'.$lang_common['register'].'</a>').'</p>';
+				}
+
+				//$forum_page['crumbs'][0][0] = $lang_tracker['Torrents'];
+			} else if ($fancy_tracker_forum_torrent_mode === FANCY_TRACKER_FORUM_MODE_TORRENTS_AND_POSTS) {
+				if ($forum_user['may_post'] && $forum_user['may_torrent']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.$fancy_tracker_link_may_post.' '.$lang_tracker['or'].' '.$fancy_tracker_link_may_torrent.'</p>';
+				} else if ($forum_user['may_post']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.$fancy_tracker_link_may_post.'</p>';
+				} else if ($forum_user['may_torrent']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.$fancy_tracker_link_may_torrent.'</p>';
+				} else if ($forum_user['is_guest']) {
+					$forum_page['page_post']['posting'] = '<p class="posting">'.sprintf($lang_tracker['Login to post'], '<a href="'.forum_link($forum_url['login']).'">'.$lang_common['login'].'</a>', '<a href="'.forum_link($forum_url['register']).'">'.$lang_common['register'].'</a>').'</p>';
+				}
+
+				//$forum_page['crumbs'][0][0] = $lang_tracker['Torrents'];
+			}
+		]]></hook>
+
+		<hook id="vt_pre_header_load"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($cur_topic['torrent_id']) {
+				$forum_page['crumbs'][0][0] = $lang_tracker['Torrents'];
+				define('IS_TORRENT_TOPIC', TRUE);
+			}
+		]]></hook>
+
+		<!-- EMPTY TORRENTS FORUM -->
+		<hook id="vf_no_results_row_pre_display"><![CDATA[
+			if ($cur_forum['is_torrent']) {
+				$forum_page['item_body']['subject']['title'] = '<h3 class="hn">'.$lang_tracker['No torrents'].'</h3>';
+				$forum_page['item_body']['subject']['desc'] = '<p>'.$lang_tracker['First torrent nag'].'</p>';
+			}
+		]]></hook>
+
+		<hook id="fn_add_topic_qr_add_topic"><![CDATA[
+			if (isset($post_info['torrent_id'])) {
+				$query['INSERT'] .= ', torrent_id';
+				$query['VALUES'] .= ', '.$post_info['torrent_id'];
+			}
+		]]></hook>
+
+		<hook id="mi_new_action"><![CDATA[
+			if ($action == 'fancy_tracker_get_stats') {
+				$fancy_tracker_Result = 0;
+
+				$torrentOwnerSeeding = FANCY_TRACKER_GS_NO_AUTHOR;
+				$torrent['seeds'] = $torrent['leechers'] = array();
+
+				do {
+					if ($forum_user['g_use_tracker'] == '0') {
+						break;
+					}
+
+					$info_hash = isset($_GET['hash']) ? forum_trim($_GET['hash']) : '';
+					if (!$info_hash || utf8_strlen($info_hash) != 40) {
+						break;
+					}
+
+					$torrentOwnerID = isset($_GET['owner_id']) ? intval($_GET['owner_id'], 10) : FALSE;
+					if (($torrentOwnerID === FALSE) || ($torrentOwnerID < 2)) {
+						break;
+					}
+
+					// GET TORRENT PEERS INFO
+					$peersQuery = array(
+						'SELECT'	=>	'p.*',
+						'FROM'		=>	'peers AS p',
+						'WHERE'		=>	'p.info_hash = \''.$forum_db->escape($info_hash).'\''
+					);
+					$peersResult = $forum_db->query_build($peersQuery) or error(__FILE__, __LINE__);
+					while ($cur_peer = $forum_db->fetch_assoc($peersResult)) {
+						$torrent[$cur_peer['remaining'] == 0 ? 'seeds' : 'leechers'][] = $cur_peer;
+					}
+
+					// IS OWNER?
+					if (!$forum_user['is_guest'] && ($torrentOwnerID == $forum_user['id'])) {
+						// DEFAULT - OWNER NOT SEEDING
+						$torrentOwnerSeeding = FANCY_TRACKER_GS_NO_SEED_AUTHOR;
+						if (count($torrent['seeds']) > 0) {
+							foreach ($torrent['seeds'] as $torrent_seed) {
+								if (($torrent_seed['user_id'] == $torrentOwnerID) && ($torrent_seed['remaining'] == 0)) {
+									$torrentOwnerSeeding = FANCY_TRACKER_GS_SEED_AUTHOR;
+									break;
+								}
+							}
+						}
+					}
+
+					$fancy_tracker_Result = 1;
+				} while (FALSE);
+
+				if (function_exists("json_encode")) {
+					exit(json_encode(array('result'=>$fancy_tracker_Result, 'o'=>$torrentOwnerSeeding, 's'=>forum_number_format(count($torrent['seeds'])), 'l'=>forum_number_format(count($torrent['leechers'])))));
+				} else {
+					exit('{"result":'.$fancy_tracker_Result.',"o":'.$torrentOwnerSeeding.',"s":'.forum_number_format(count($torrent['seeds'])).',"l":'.forum_number_format(count($torrent['leechers'])).'}');
+				}
+			}
+		]]></hook>
+
+
+		<hook id="es_essentials"><![CDATA[
+			include_once $ext_info['path'].'/functions.php';
+
+			$Peersquery = array(
+				'DELETE'	=>	'peers',
+				'WHERE'		=>	'last_action<'.(time() - ($forum_config['o_fancy_tracker_announce_interval'] * 2))
+			);
+			$forum_db->query_build($Peersquery) or error(__FILE__, __LINE__);
+		]]></hook>
+
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			if (!isset($lang_tracker)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+			<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+				<h2 class="hn"><span><?php echo $lang_tracker['Options Name'] ?></span></h2>
+			</div>
+			<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+				<legend class="group-legend"><span><?php echo $lang_tracker['Options Name'] ?></span></legend>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_tracker_allow_submit_ip]" value="1" <?php if ($forum_config['o_fancy_tracker_allow_submit_ip'] == 1) echo 'checked="checked" ' ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Allow Submit IP'] ?></span><?php echo $lang_tracker['Allow Submit IP Hint'] ?></label>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_tracker_use_retracker]" value="1" <?php if ($forum_config['o_fancy_tracker_use_retracker'] == 1) echo 'checked="checked" ' ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Use Retracker'] ?></span><?php echo $lang_tracker['Use Retracker Hint'] ?></label>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_tracker_enable_scrape]" value="1" <?php if ($forum_config['o_fancy_tracker_enable_scrape'] == 1) echo 'checked="checked" ' ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Use Scrape'] ?></span><?php echo $lang_tracker['Use Scrape Hint'] ?></label>
+					</div>
+				</div>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Announce Interval'] ?></span><small><?php echo $lang_tracker['Announce Interval Hint'] ?></small></label><br />
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_tracker_announce_interval]" size="6" maxlength="6" value="<?php echo forum_htmlencode($forum_config['o_fancy_tracker_announce_interval']) ?>" /></span>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Peer Request Count'] ?></span><small><?php echo $lang_tracker['Peer Request Count Hint'] ?></small></label><br />
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_tracker_peer_request_count]" size="6" maxlength="6" value="<?php echo forum_htmlencode($forum_config['o_fancy_tracker_peer_request_count']) ?>" /></span>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_tracker['Update Stats Interval'] ?></span><small><?php echo $lang_tracker['Update Stats Interval Hint'] ?></small></label><br />
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_tracker_update_stats_interval]" size="6" maxlength="6" value="<?php echo forum_htmlencode($forum_config['o_fancy_tracker_update_stats_interval']) ?>" /></span>
+					</div>
+				</div>
+
+
+			</fieldset>
+<?php
+		]]></hook>
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_tracker_update_stats_interval'] = intval($form['fancy_tracker_update_stats_interval'], 10);
+			if ($form['fancy_tracker_update_stats_interval'] < 10) {
+				$form['fancy_tracker_update_stats_interval'] = 10;
+			}
+
+			$form['fancy_tracker_announce_interval'] = intval($form['fancy_tracker_announce_interval'], 10);
+			$form['fancy_tracker_peer_request_count'] = intval($form['fancy_tracker_peer_request_count'], 10);
+			$form['fancy_tracker_allow_submit_ip'] = (!isset($form['fancy_tracker_allow_submit_ip']) || intval($form['fancy_tracker_allow_submit_ip'], 10) <= 0) ? '0' : '1';
+			$form['fancy_tracker_use_retracker'] = (!isset($form['fancy_tracker_use_retracker']) || intval($form['fancy_tracker_use_retracker'], 10) <= 0) ? '0' : '1';
+			$form['fancy_tracker_enable_scrape'] = (!isset($form['fancy_tracker_enable_scrape']) || intval($form['fancy_tracker_enable_scrape'], 10) <= 0) ? '0' : '1';
+		]]></hook>
+
+
+
+		<hook id="co_modify_url_scheme"><![CDATA[
+			if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+				require_once $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+			} else {
+				require_once $ext_info['path'].'/url/Default.php';
+			}
+		]]></hook>
+
+		<hook id="re_rewrite_rules"><![CDATA[
+			$forum_rewrite_rules['/^new[\/_-]?torrent[\/_-]?([0-9]+)(\.html?|\/)?$/i'] = FORUM_ROOT.'/extensions/'.$ext_info['id'].'/index.php?action=upload&fid=$1';
+			$forum_rewrite_rules['/^get[\/_-]?torrent[\/_-]?([a-zA-Z0-9]{40})(\.html?|\/)?$/i'] = FORUM_ROOT.'/extensions/'.$ext_info['id'].'/index.php?action=get&hash=$1';
+			$forum_rewrite_rules['/^announce[\/_-]?torrent[\/_-]?([a-zA-Z0-9]{32})(\.html?|\/)?$/i'] = FORUM_ROOT.'/extensions/'.$ext_info['id'].'/announce.php?passkey=$1';
+			$forum_rewrite_rules['/^search[\/_-]?(torrents)[\/_-]?user[\/_-]?([0-9]+)(\.html?|\/)?$/i']	= 'search.php?action=show_user_$1&user_id=$2';
+			$forum_rewrite_rules['/^search[\/_-]?(torrents)[\/_-]?user[\/_-]?([0-9]+)[\/_-]?p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'] =	'search.php?action=show_user_$1&user_id=$2&p=$4';
+		]]></hook>
+	</hooks>
+</extension>
