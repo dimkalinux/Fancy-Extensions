@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		html, body { height: 100%; width: 100%; margin: 0; }
+
+		body {
+			text-align: left;
+			padding: 0px;
+			color: #000;
+			background: #fff;
+			font: 13px/1.331 arial,helvetica,clean,sans-serif;
+			*font-size:small; /* for IE */
+			*font:x-small; /* for IE in quirks mode */
+		}
+
+		#header {
+			background: #C3D9FF;
+		}
+
+		#wrap {
+			padding: 1em 1em .5em 1em;
+		}
+
+		h1 {
+			font-size: 1.5em;
+			font-weight: normal;
+			padding: .5em .8em;
+			margin: 0;
+		}
+
+		input[type=text],
+		textarea {
+			width: 26.6em !important;
+			border: solid 1px #DFE6ED;
+			-moz-border-radius: 4px;
+			-webkit-border-radius: 4px;
+			border-radius: 4px;
+			padding: 3px;
+		}
+
+
+		#fragment {
+			margin: .7em 0 .5em;
+			border: solid 1px #DFE6ED;
+			padding: .8em;
+			max-width: 35em;
+		}
+
+		select[name=suggest] {
+			width: 27em;
+		}
+
+		.row {
+			margin: .7em 0 .2em;
+		}
+
+		.nrow {
+			margin: .2em 0 .1em;
+			padding: .9em 0 .8em;
+			border-top: solid 1px #DFE6ED;
+		}
+
+		#reason {
+			margin: 0 0 .3em 0;
+		}
+
+		label.lh {
+			font-weight: bold;
+			display: block;
+			margin-bottom: .2em;
+		}
+	</style>
+
+	<title>Параметры правописания</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<script type="text/javascript" src="../../../j/spellchecker_yandex.min.js"></script>
+</head>
+<body onload="new SpellOptDialog().init()">
+	<div id="header">
+		<h1>Параметры правописания</h1>
+	</div>
+
+	<div id="wrap">
+	  <form id="form" action="">
+
+	    <div style="margin-bottom: 0.7em;">
+			<label class="lh">Параметры</label>
+			<ul style="list-style-type:none;padding-left:15px;margin:0px;">
+				<li><input type="checkbox" id="ignoreUppercase"/> <label for="ignoreUppercase">Пропускать слова из ПРОПИСНЫХ букв</label></li>
+				<li><input type="checkbox" id="ignoreDigits"/> <label for="ignoreDigits">Пропускать слова с цифрами</label></li>
+				<li><input type="checkbox" id="ignoreUrls"/> <label for="ignoreUrls">Пропускать URL'и и имена файлов</label></li>
+				<li><input type="checkbox" id="findRepeat"/> <label for="findRepeat">Подсвечивать повторяющиеся слова</label></li>
+			</ul>
+	    </div>
+
+	    <div class="nrow">
+			<label class="lh" for="langList">Язык словаря</label>
+			<div style="padding-left:18px;">
+			<select name="langList" id="langList" style="width:160px;">
+				<option value="ru">Русский</option>
+				<option value="uk">Украинский</option>
+				<option value="en">Английский</option>
+			</select>
+			<button type="button" name="userDic">Редактировать</button>
+			</div>
+	    </div>
+
+	    <div id="groupLatin" class="nrow">
+	    <label class="lh">Слова, написанные латиницей</label>
+	      <ul style="list-style-type:none;padding-left:15px;margin:0px;">
+	        <li><input type="radio" id="ignoreLatin" name="latin" value="ignore"/> <label for="ignoreLatin">Пропускать</label></li>
+	        <li><input type="radio" id="flagLatin" name="latin" value="flag"/> <label for="flagLatin">Подсвечивать</label></li>
+	        <li>
+	          <div style="position:relative;">
+	          <input type="radio" id="checkLatin" name="latin" value="check"/> <label for="checkLatin">Проверять</label>
+	          <span style="position:absolute;right:0px;"><select name="latinLang" style="width:160px;">
+	            <option value="en" selected="selected">Английский</option>
+	          </select></span>
+	          </div>
+	        </li>
+	      </ul>
+	    </div>
+
+	    <div class="nrow">
+	      <span>
+	        <input type="checkbox" id="recheck"/>
+	        <label for="recheck" id="labelRecheck">Проверить с начала</label>
+	      </span>
+	    </div>
+
+	    <div class="nrow">
+			<input type="button" name="ok" class="button" value="OK"/>
+	        <input type="button" name="cancel" class="button" value="Отмена"/>
+		</div>
+
+	  </form>
+	</div>
+</body>
+</html>
