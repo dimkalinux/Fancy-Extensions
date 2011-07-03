@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_alerts</id>
+	<title>Fancy Alerts</title>
+	<version>1.4</version>
+	<description>Show alerts for updates in your topics and quotes you posts</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<install><![CDATA[
+		if (!isset($forum_config['o_fancy_alerts_autoupdate_interval'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_alerts_autoupdate_interval\', \'0\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+
+		if (!$forum_db->table_exists('fancy_alerts_topics')) {
+			$schema = array(
+				'FIELDS'	=>	array(
+					'user_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'topic_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'last_post_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'last_post_time' 	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'last_user_view' 	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+				),
+			);
+			$forum_db->create_table('fancy_alerts_topics', $schema);
+			$forum_db->add_index('fancy_alerts_topics', 'i_covered_get_num', array('user_id', 'last_post_id', 'last_post_time', 'last_user_view'), false, false);
+
+			// ~ LAST 3 MONTH
+			$date_topic_limit = time() - 8035200;
+
+			// FILL by OLD TOPICS
+			$query = array(
+				'SELECT'	=> 't.id, t.last_post, t.last_post_id, p.poster_id AS owner_id',
+				'FROM'		=> 'topics AS t',
+				'JOINS' 	=> array(
+					array(
+						'LEFT JOIN'	=> 'posts AS p',
+						'ON'		=> '(t.first_post_id=p.id)'
+					),
+				),
+				'WHERE'		=> 't.closed=0 AND t.posted > '.$date_topic_limit
+			);
+			$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+			if ($forum_db->num_rows($result)) {
+				function fancy_alerts_tmp_add_new_topic_alerts($user_id, $topic_id, $last_post_time) {
+					global $forum_db, $db_type;
+
+					// Add the topic
+					$query = array(
+						'INSERT'	=> 'user_id, topic_id, last_post_id, last_post_time, last_user_view',
+						'INTO'		=> 'fancy_alerts_topics',
+						'VALUES'	=> '\''.$user_id.'\', \''.$topic_id.'\', 0, \''.$last_post_time.'\', 0'
+					);
+
+					$forum_db->query_build($query) or error(__FILE__, __LINE__);
+				}
+
+				while ($cur_topic = $forum_db->fetch_assoc($result)) {
+					fancy_alerts_tmp_add_new_topic_alerts($cur_topic['owner_id'], $cur_topic['id'], $cur_topic['last_post']);
+				}
+			}
+		}
+
+		if (!$forum_db->table_exists('fancy_alerts_posts')) {
+			$schema = array(
+				'FIELDS'	=>	array(
+					'user_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'topic_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'post_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+				),
+			);
+			$forum_db->create_table('fancy_alerts_posts', $schema);
+			$forum_db->add_index('fancy_alerts_posts', 'i_user_id', array('user_id'), false, false);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		// Delete extension options from the config
+		$query = array(
+			'DELETE'	=> 'config',
+			'WHERE'		=> 'conf_name in (\'o_fancy_alerts_autoupdate_interval\')'
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+		//
+		$forum_db->drop_index('fancy_alerts_topics', 'i_covered_get_num', false);
+		$forum_db->drop_table('fancy_alerts_topics');
+
+		//
+		$forum_db->drop_index('fancy_alerts_posts', 'i_user_id', false);
+		$forum_db->drop_table('fancy_alerts_posts');
+	]]></uninstall>
+
+	<hooks>
+			<hook id="es_essentials"><![CDATA[
+				include_once $ext_info['path'].'/functions.inc.php';
+			]]></hook>
+
+
+			<!-- ADD -->
+			<hook id="fn_add_topic_end"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				// CREATE TOPIC ALERTS
+				$fancy_alerts->add_new_topic_alerts($post_info['poster_id'], $new_tid, $post_info['posted']);
+
+				// CREATE POST ALERTS
+				$fancy_alerts->add_quote_alerts($new_tid, $new_pid, $post_info['message']);
+			]]></hook>
+
+
+			<!-- DEL TOPIC -->
+			<hook id="fn_delete_topic_end"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->del_topic_alerts($topic_id);
+			]]></hook>
+
+
+			<!-- DEL POST -->
+			<hook id="fn_delete_post_end"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->del_post_alerts($post_id);
+			]]></hook>
+
+			<!-- MODERATE MANY DEL POST -->
+			<hook id="mr_confirm_delete_posts_pre_redirect"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->del_post_alerts($posts);
+			]]></hook>
+
+
+
+			<!-- UPDATE with new POST -->
+			<hook id="fn_add_post_end"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+
+				$fancy_alerts->update_topic_alerts($post_info['topic_id'], $new_pid, $post_info['posted'], $post_info['poster_id']);
+				$fancy_alerts->add_quote_alerts($post_info['topic_id'], $new_pid, $post_info['message']);
+			]]></hook>
+
+			<!-- UPDATE on EDIT POST -->
+			<hook id="ed_pre_redirect"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->update_quote_alerts($cur_post['tid'], $id, $message);
+			]]></hook>
+
+			<!-- ON POST MERGE -->
+			<hook id="fancy_merge_posts_pre_return"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->update_topic_alerts($post_info['topic_id'], 0, $post_info['posted'], $post_info['poster_id']);
+
+				// UPDATE POST ALERTS
+				$fancy_alerts->update_quote_alerts($post_info['topic_id'], $fancy_merge_posts_prev_post['post_id'], $fancy_merge_posts_prev_post['message']."\n".$post_info['message']);
+			]]></hook>
+
+			<!-- On DEL USER -->
+			<hook id="fn_delete_user_end"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				$fancy_alerts->on_del_user($user_id);
+			]]></hook>
+
+			<!-- ON DEL LAST POST in TOPIC -->
+			<hook id="fn_qr_update_topic2"><![CDATA[
+				if ($last_id == $post_id) {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->update_topic_alerts_on_delete_last_post($topic_id, $second_last_id, $second_posted);
+				}
+			]]></hook>
+
+
+			<!-- VIEWTOPIC BLOCK -->
+			<hook id="vt_qr_get_topic_info"><![CDATA[
+				if (!$forum_user['is_guest']) {
+					// GET OWNER
+					$query['SELECT'] .= ', coalesce(p.poster_id, 1) AS topic_owner';
+					$query['JOINS'][] = array(
+						'LEFT JOIN'	=> 'posts AS p',
+						'ON'		=> '(t.first_post_id=p.id)'
+					);
+
+					// GET ALERTS STATUS
+					$query['SELECT'] .= ', fat.user_id AS is_fancy_alerts_topic';
+					$query['JOINS'][] = array(
+						'LEFT JOIN'	=> 'fancy_alerts_topics AS fat',
+						'ON'		=> '(t.id=fat.topic_id AND fat.user_id='.$forum_user['id'].')'
+					);
+				}
+			]]></hook>
+			<hook id="vt_pre_header_load"><![CDATA[
+				if (!$forum_user['is_guest']) {
+					$fancy_alerts = new Fancy_alerts;
+
+					if (!isset($lang_fancy_alerts)) {
+						if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+
+					$query = array(
+						'SELECT'	=> 'p.id, p.posted',
+						'FROM'		=> 'posts AS p',
+						'WHERE'		=> 'p.topic_id='.$id,
+						'ORDER BY'	=> 'p.id',
+						'LIMIT'		=> $forum_page['start_from'].','.$forum_user['disp_posts']
+					);
+
+					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+					$fancy_alerts_last_post = '';
+					$fancy_alerts_showed_posts = array();
+
+					while ($last_post = $forum_db->fetch_assoc($result)) {
+						$fancy_alerts_last_post = $last_post;
+						array_push($fancy_alerts_showed_posts, $last_post['id']);
+					}
+
+					$fancy_alerts->on_viewtopic_update_topic_alerts($id, $forum_user['id'], $fancy_alerts_last_post['id'], $fancy_alerts_last_post['posted']);
+
+					$fancy_alerts->mark_quotes_as_readed($fancy_alerts_showed_posts, $forum_user['id']);
+
+					// SHOW ALERTS STATUS
+					if ($cur_topic['is_fancy_alerts_topic']) {
+						$forum_page['main_head_options']['fancy_alerts_topic_disable'] = '<span><a class="sub-option" href="'.forum_link($forum_url['fancy_alerts_topics_turn_off'], array($id, generate_form_token('fancy_alerts_topics_off'.$id.$forum_user['id']))).'" title="'.$lang_fancy_alerts['Alerts Topics On Title'].'"><em>'.$lang_fancy_alerts['Alerts Topics On'].'</em></a></span>';
+					} else {
+						$forum_page['main_head_options']['fancy_alerts_topic_enable'] = '<span><a class="sub-option" href="'.forum_link($forum_url['fancy_alerts_topics_turn_on'], array($id, generate_form_token('fancy_alerts_topics_on'.$id.$forum_user['id']))).'" title="'.$lang_fancy_alerts['Alerts Topics Off Title'].'">'.$lang_fancy_alerts['Alerts Topics Off'].'</a></span>';
+					}
+				}
+			]]></hook>
+			<hook id="hd_visit_elements" priority="3"><![CDATA[
+				$fancy_alerts = new Fancy_alerts;
+				if (!isset($lang_fancy_alerts)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				// TOPICS ALERTS
+				if (!$forum_user['is_guest']) {
+					$fancy_topics_alerts_num = $fancy_alerts->get_num_topics_alerts_for_user($forum_user['id'], $forum_user['group_id']);
+
+					if ($fancy_topics_alerts_num > 0) {
+						$visit_elements['<!-- forum_visit -->'] = preg_replace('#(<p id="visit-links" class="options">.*?)(</p>)#','$1 <span><a title="'.$lang_fancy_alerts['Alerts Topics Title'].'" id="fancy_alerts_topics_link" href="'.forum_link($forum_url['fancy_alerts_topics_goto_alerts'], $forum_user['id']).'">'.$lang_fancy_alerts['Alerts Topics'].'</a><span id="fancy_alerts_topic_n">'.$fancy_topics_alerts_num.'</span></span>$2', $visit_elements['<!-- forum_visit -->']);
+					} else {
+						$visit_elements['<!-- forum_visit -->'] = preg_replace('#(<p id="visit-links" class="options">.*?)(</p>)#','$1 <span style="display: none;"><a title="'.$lang_fancy_alerts['Alerts Topics Title'].'" id="fancy_alerts_topics_link" href="'.forum_link($forum_url['fancy_alerts_topics_goto_alerts'], $forum_user['id']).'">'.$lang_fancy_alerts['Alerts Topics'].'</a><span id="fancy_alerts_topic_n">0</span></span>$2', $visit_elements['<!-- forum_visit -->']);
+					}
+
+					// QUOTES ALERTS
+					$fancy_quotes_alerts_num = $fancy_alerts->get_num_quotes_alerts_for_user($forum_user['id'], $forum_user['group_id']);
+
+					if ($fancy_quotes_alerts_num > 0) {
+						$visit_elements['<!-- forum_visit -->'] = preg_replace('#(<p id="visit-links" class="options">.*?)(</p>)#','$1 <span><a title="'.$lang_fancy_alerts['Alerts Quotes Title'].'" id="fancy_alerts_posts_link" href="'.forum_link($forum_url['fancy_alerts_quotes_goto_alerts'], $forum_user['id']).'">'.$lang_fancy_alerts['Alerts Quotes'].'</a><span id="fancy_alerts_quotes_n">'.$fancy_quotes_alerts_num.'</span></span>$2',$visit_elements['<!-- forum_visit -->']);
+					} else {
+						$visit_elements['<!-- forum_visit -->'] = preg_replace('#(<p id="visit-links" class="options">.*?)(</p>)#','$1 <span style="display: none;"><a title="'.$lang_fancy_alerts['Alerts Quotes Title'].'" id="fancy_alerts_posts_link" href="'.forum_link($forum_url['fancy_alerts_quotes_goto_alerts'], $forum_user['id']).'">'.$lang_fancy_alerts['Alerts Quotes'].'</a><span id="fancy_alerts_quotes_n">0</span></span>$2',$visit_elements['<!-- forum_visit -->']);
+					}
+				}
+			]]></hook>
+
+
+			<!-- SEARCH BLOCK -->
+			<hook id="sf_fn_validate_actions_start"><![CDATA[
+				$valid_actions[] = 'fancy_alerts_topics_show';
+				$valid_actions[] = 'fancy_alerts_quotes_show';
+				$valid_actions[] = 'show_fancy_alerts_my_topics';
+			]]></hook>
+
+			<hook id="se_additional_quicksearch_variables"><![CDATA[
+			if ($action == 'fancy_alerts_topics_show') {
+				define('FORUM_PAGE_FANCY_ALERTS_TOPICS', TRUE);
+
+				$value = isset($_GET['user_id']) ? intval($_GET['user_id'], 10) : 0;
+				if ($value < 2) {
+					message($lang_common['Bad request']);
+				}
+			}
+
+			if ($action == 'fancy_alerts_quotes_show') {
+				define('FORUM_PAGE_FANCY_ALERTS_POSTS', TRUE);
+
+				$value = isset($_GET['user_id']) ? intval($_GET['user_id'], 10) : 0;
+				if ($value < 2) {
+					message($lang_common['Bad request']);
+				}
+			}
+
+			if ($action == 'show_fancy_alerts_my_topics') {
+				define('FORUM_PAGE_FANCY_ALERTS_MY_TOPICS', TRUE);
+
+				$value = isset($_GET['user_id']) ? intval($_GET['user_id'], 10) : 0;
+				if ($value < 2) {
+					message($lang_common['Bad request']);
+				}
+			}
+			]]></hook>
+
+			<hook id="sf_fn_generate_search_crumbs_start"><![CDATA[
+				//
+				if ($action == 'fancy_alerts_topics_show') {
+					if (!isset($lang_fancy_alerts)) {
+						if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+
+					$forum_page['crumbs'][] = $lang_fancy_alerts['Your Alerts Topics'];
+					$forum_page['items_info'] = generate_items_info($lang_fancy_alerts['Your Alerts Topics'], ($forum_page['start_from'] + 1), $num_hits);
+					$forum_page['main_foot_options']['fancy_alerts_mark_topics_readed'] = '<span'.(empty($forum_page['main_foot_options']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['fancy_alerts_topics_mark_read'], generate_form_token('fancy_alerts_topics_mark_read'.$forum_user['id'])).'">'.$lang_fancy_alerts['Mark all topics as read'].'</a></span>';
+
+					return TRUE;
+				}
+
+				//
+				if ($action == 'fancy_alerts_quotes_show') {
+					if (!isset($lang_fancy_alerts)) {
+						if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+
+					$forum_page['crumbs'][] = $lang_fancy_alerts['Your Alerts Quotes'];
+					$forum_page['items_info'] = generate_items_info($lang_fancy_alerts['Your Alerts Quotes'], ($forum_page['start_from'] + 1), $num_hits);
+					$forum_page['main_foot_options']['fancy_alerts_mark_quotes_readed'] = '<span'.(empty($forum_page['main_foot_options']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['fancy_alerts_quotes_mark_read'], generate_form_token('fancy_alerts_quotes_mark_read'.$forum_user['id'])).'">'.$lang_fancy_alerts['Mark all quotes as read'].'</a></span>';
+
+					return TRUE;
+				}
+
+				//
+				if ($action == 'show_fancy_alerts_my_topics') {
+					if (!isset($lang_fancy_alerts)) {
+						if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+
+					$forum_page['crumbs'][] = $lang_fancy_alerts['Search Alerts Topics'];
+					$forum_page['items_info'] = generate_items_info($lang_fancy_alerts['Your Alerts Quotes'], ($forum_page['start_from'] + 1), $num_hits);
+
+					return TRUE;
+				}
+			]]></hook>
+
+			<hook id="sf_fn_generate_action_search_query_end"><![CDATA[
+				// ALERTED TOPICS
+				if ($action == 'fancy_alerts_topics_show')	{
+					if ($forum_user['is_guest']) {
+						message($lang_common['Bad request']);
+					}
+
+					// Check we're allowed to see the subscriptions we're trying to look at
+					if ($forum_user['g_id'] != FORUM_ADMIN && $forum_user['id'] != $value) {
+						message($lang_common['Bad request']);
+					}
+
+					$fancy_alerts_now = time();
+
+					$query = array(
+						'SELECT'	=> 't.id AS tid, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.closed, t.sticky, t.forum_id, f.forum_name',
+						'FROM'		=> 'topics AS t',
+						'JOINS'		=> array(
+							array(
+								'INNER JOIN'	=> 'fancy_alerts_topics AS fat',
+								'ON'			=> '(t.id=fat.topic_id AND fat.user_id='.$value.')'
+							),
+							array(
+								'INNER JOIN'	=> 'forums AS f',
+								'ON'			=> 'f.id=t.forum_id'
+							),
+							array(
+								'LEFT JOIN'		=> 'forum_perms AS fp',
+								'ON'			=> '(fp.forum_id=f.id AND fp.group_id='.$forum_user['g_id'].')'
+							)
+						),
+						'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1) AND fat.last_post_time > fat.last_user_view AND fat.last_post_id!=0',
+						'ORDER BY'	=> 't.last_post DESC'
+					);
+
+					// With "has posted" indication
+					if (!$forum_user['is_guest'] && $forum_config['o_show_dot'] == '1') {
+						$subquery = array(
+							'SELECT'	=> 'COUNT(p.id)',
+							'FROM'		=> 'posts AS p',
+							'WHERE'		=> 'p.poster_id='.$forum_user['id'].' AND p.topic_id=t.id'
+						);
+						$query['SELECT'] .= ', ('.$forum_db->query_build($subquery, true).') AS has_posted';
+					}
+
+					$url_type = $forum_url['fancy_alerts_topics_goto_alerts'];
+					$search_id = $value;
+				}
+
+				// ALERTED POSTS
+				if ($action == 'fancy_alerts_quotes_show')	{
+					if ($forum_user['is_guest']) {
+						message($lang_common['Bad request']);
+					}
+
+					// Check we're allowed to see the subscriptions we're trying to look at
+					if ($forum_user['g_id'] != FORUM_ADMIN && $forum_user['id'] != $value) {
+						message($lang_common['Bad request']);
+					}
+
+
+					$query = array(
+						'SELECT'	=> 'p.id AS pid, p.poster AS pposter, p.posted AS pposted, p.poster_id, p.message, p.hide_smilies, t.id AS tid, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.forum_id, f.forum_name',
+						'FROM'		=> 'posts AS p',
+						'JOINS'		=> array(
+							array(
+								'INNER JOIN'	=> 'topics AS t',
+								'ON'			=> 't.id=p.topic_id'
+							),
+							array(
+								'INNER JOIN'	=> 'fancy_alerts_posts AS fap',
+								'ON'			=> '(t.id=fap.topic_id AND fap.user_id='.$value.')'
+							),
+							array(
+								'INNER JOIN'	=> 'forums AS f',
+								'ON'			=> 'f.id=t.forum_id'
+							),
+							array(
+								'LEFT JOIN'		=> 'forum_perms AS fp',
+								'ON'			=> '(fp.forum_id=f.id AND fp.group_id='.$forum_user['g_id'].')'
+							)
+						),
+						'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1) AND (p.id=fap.post_id)',
+						'ORDER BY'	=> 'pposted DESC'
+					);
+
+					$show_as = 'posts';
+					$url_type = $forum_url['fancy_alerts_quotes_goto_alerts'];
+					$search_id = $value;
+				}
+
+				// MY ALERTS TOPICS
+				if ($action == 'show_fancy_alerts_my_topics') {
+					if ($forum_user['is_guest']) {
+						message($lang_common['Bad request']);
+					}
+
+					// Check we're allowed to see the subscriptions we're trying to look at
+					if ($forum_user['g_id'] != FORUM_ADMIN && $forum_user['id'] != $value) {
+						message($lang_common['Bad request']);
+					}
+
+					$query = array(
+						'SELECT'	=> 't.id AS tid, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.closed, t.sticky, t.forum_id, f.forum_name',
+						'FROM'		=> 'topics AS t',
+						'JOINS'		=> array(
+							array(
+								'INNER JOIN'	=> 'fancy_alerts_topics AS fat',
+								'ON'			=> '(t.id=fat.topic_id AND fat.user_id='.$value.')'
+							),
+							array(
+								'INNER JOIN'	=> 'forums AS f',
+								'ON'			=> 'f.id=t.forum_id'
+							),
+							array(
+								'LEFT JOIN'		=> 'forum_perms AS fp',
+								'ON'			=> '(fp.forum_id=f.id AND fp.group_id='.$forum_user['g_id'].')'
+							)
+						),
+						'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1)',
+						'ORDER BY'	=> 't.last_post DESC'
+					);
+
+					// With "has posted" indication
+					if (!$forum_user['is_guest'] && $forum_config['o_show_dot'] == '1')
+					{
+						$subquery = array(
+							'SELECT'	=> 'COUNT(p.id)',
+							'FROM'		=> 'posts AS p',
+							'WHERE'		=> 'p.poster_id='.$forum_user['id'].' AND p.topic_id=t.id'
+						);
+
+						($hook = get_hook('sf_fn_generate_action_search_query_qr_get_subscriptions_has_posted')) ? eval($hook) : null;
+						$query['SELECT'] .= ', ('.$forum_db->query_build($subquery, true).') AS has_posted';
+					}
+
+					$url_type = $forum_url['fancy_alerts_search_my_alerts_topics'];
+					$search_id = $value;
+				}
+			]]></hook>
+
+
+			<!-- MISC ACTION today only SYNC -->
+			<hook id="mi_new_action"><![CDATA[
+				//
+				if ($action == 'fancy_alerts_topics_mark_read') {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->action_topics_mark_read();
+				}
+
+				//
+				if ($action == 'fancy_alerts_quotes_mark_read') {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->action_quotes_mark_read();
+				}
+
+				//
+				if ($action == 'fancy_alerts_topics_on') {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->action_alerts_topics_on();
+				}
+
+				//
+				if ($action == 'fancy_alerts_topics_off') {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->action_alerts_topics_off();
+				}
+
+				// FOR ASYNC STATUS UPDATE
+				if ($action == 'fancy_alerts_update_status') {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->action_get_status();
+				}
+			]]></hook>
+
+			<!-- UPDATE POSTS -->
+			<hook id="vt_qr_get_post_page"><![CDATA[
+				if (!$forum_user['is_guest']) {
+					$fancy_alerts = new Fancy_alerts;
+					$fancy_alerts->mark_quotes_as_readed(array($pid), $forum_user['id']);
+				}
+			]]></hook>
+
+
+			<!-- LINK TO ALL MY ALERTS TOPICS -->
+			<hook id="pf_change_details_about_pre_header_load"><![CDATA[
+				if ($forum_page['own_profile'] || $forum_user['g_id'] == FORUM_ADMIN) {
+					if (!isset($lang_fancy_alerts)) {
+						if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+					$forum_page['user_activity']['search_fancy_alerts_topics'] = '<li'.(empty($forum_page['user_activity']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['fancy_alerts_search_my_alerts_topics'], $id).'">'.(($forum_page['own_profile']) ? $lang_fancy_alerts['View your topics alerts'] : sprintf($lang_fancy_alerts['View user topics alerts'], forum_htmlencode($user['username']))).'</a></li>';
+				}
+			]]></hook>
+
+
+			<!-- SETTINGS -->
+			<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+				if (!isset($lang_fancy_alerts)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $lang_fancy_alerts['Settings Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><span><?php echo $lang_fancy_alerts['Settings Name'] ?></span></legend>
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box sf-short text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+								<span><?php echo $lang_fancy_alerts['Settings Autoupdate Name'] ?></span>
+								<small><?php echo $lang_fancy_alerts['Settings Autoupdate Help'] ?></small>
+							</label><br/>
+							<span class="fld-input">
+								<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_alerts_autoupdate_interval]" size="3" maxlength="3" value="<?php echo intval($forum_config['o_fancy_alerts_autoupdate_interval'], 10) ?>"/>
+							</span>
+						</div>
+					</div>
+				</fieldset>
+<?php
+			]]></hook>
+
+			<hook id="aop_features_validation"><![CDATA[
+				$form['fancy_alerts_autoupdate_interval'] = (!isset($form['fancy_alerts_autoupdate_interval']) ||  intval($form['fancy_alerts_autoupdate_interval'], 10) < 0) ? 0 : intval($form['fancy_alerts_autoupdate_interval'], 10);
+
+				if ($form['fancy_alerts_autoupdate_interval'] > 0 && $form['fancy_alerts_autoupdate_interval'] < 20) {
+					$form['fancy_alerts_autoupdate_interval'] = 20;
+				}
+			]]></hook>
+
+			<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+				if (!isset($lang_fancy_alerts)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				if ($ext['id'] == 'fancy_alerts' && !isset($forum_page['ext_actions']['fancy_alerts_settings'])) {
+					$forum_page['ext_actions']['fancy_alerts_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_alerts['Go to settings'].'</a></span>';
+				}
+			]]></hook>
+
+
+			<!-- AUTOUPDate js PART -->
+			<hook id="hd_head"><![CDATA[
+				if (file_exists($ext_info['path'].'/c/'.$forum_user['style'].'/style.css')) {
+					$forum_head['fancy_alerts_css'] = '<link rel="stylesheet" type="text/css" media="screen" href="'.$ext_info['url'].'/c/'.$forum_user['style'].'/style.css" />';
+				} else {
+					$forum_head['fancy_alerts_css'] = '<link rel="stylesheet" type="text/css" media="screen" href="'.$ext_info['url'].'/c/Oxygen/style.css" />';
+				}
+
+				$forum_head['fancy_alerts_url_js'] = '<script type="text/javascript">
+					if (typeof FORUM === "undefined" || !FORUM) {
+						var FORUM = {};
+					}
+
+					FORUM.fancy_alerts = function () {
+						// OPTIONS
+						var autoupdate_url = "'.forum_link($forum_url['fancy_alerts_autoupdate_status']).'",
+							autoupdate_time = parseInt('.$forum_config['o_fancy_alerts_autoupdate_interval'].', 10);
+
+						// GET NEW STATUS
+						function get_status() {
+							$.ajax({
+								type: "POST",
+								url: autoupdate_url,
+								dataType: "json",
+								global: false,
+								success: function (data, textStatus, XMLHttpRequest) {
+									if (data && data.error != undefined && parseInt(data.error, 10) === 0) {
+										update_status(parseInt(data.t, 10), parseInt(data.p, 10));
+									}
+								},
+							});
+						}
+
+						// UPDATE STATUS
+						function update_status(num_topics, num_posts) {
+							// UPDATE NUMS
+							$("#fancy_alerts_topic_n").html(num_topics);
+							$("#fancy_alerts_quotes_n").html(num_posts);
+
+							// SHOW/HIDE TOPICS
+							if (num_topics < 1) {
+								$("#fancy_alerts_topics_link").parent("span").hide();
+							} else {
+								$("#fancy_alerts_topics_link").parent("span").show();
+							}
+
+							// SHOW/HIDE POSTS
+							if (num_posts < 1) {
+								$("#fancy_alerts_posts_link").parent("span").hide();
+							} else {
+								$("#fancy_alerts_posts_link").parent("span").show();
+							}
+						}
+
+						return {
+							init: function () {
+								if (autoupdate_time < 30) {
+									return;
+								}
+
+								jQuery(document).everyTime(autoupdate_time+"s", "fancy_alerts_autoupdate", function () {
+									get_status();
+								});
+							}
+						}
+					}();
+
+					if (typeof jQuery == "function") {
+						jQuery(document).ready(function($) {
+							FORUM.fancy_alerts.init();
+						});
+					}
+					</script>';
+			]]></hook>
+
+
+			<hook id="co_modify_url_scheme"><![CDATA[
+				if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+					require_once $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+				} else {
+					require_once $ext_info['path'].'/url/Default.php';
+				}
+			]]></hook>
+	</hooks>
+</extension>

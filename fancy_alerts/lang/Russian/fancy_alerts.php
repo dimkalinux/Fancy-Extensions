@@ -1,0 +1,27 @@
+<?php
+
+$lang_fancy_alerts = array(
+	'Alerts Topics'					=> 'Т',
+	'Alerts Topics Title'			=> 'Просмотреть обновления ваших тем',
+	'Alerts Quotes'					=> 'C',
+	'Alerts Quotes Title'			=> 'Просмотреть цитирования ваших сообщений',
+	'Your Alerts Topics'			=> 'Обновления ваших тем',
+	'Your Alerts Quotes'			=> 'Цитаты ваших сообщений',
+	'Mark all quotes as read'		=> 'Отметить все цитаты прочитанными',
+	'Mark all topics as read'		=> 'Отметить все мои темы прочитанными',
+	'Mark all quotes redirect'		=> 'Все цитаты отмечены прочитанными. Перенаправление…',
+	'Mark all topics redirect'		=> 'Все ваши темы отмечены прочитанными. Перенаправление…',
+	'Alerts Topics On'				=> 'Алерты: <span class="fancy_alerts_status_on">вкл</span>',
+	'Alerts Topics On Title'		=> 'Выключить алерты',
+	'Alerts Topics on redirect'		=> 'Алерт включен. Перенаправление…',
+	'Alerts Topics Off'				=> 'Алерты: выкл',
+	'Alerts Topics Off Title'		=> 'Включить алерты',
+	'Alerts Topics off redirect'	=> 'Алерт выключен. Перенаправление…',
+	'View your topics alerts'		=> 'Показать ваши темы с алертами',
+	'View user topics alerts'		=> 'Показать все %s\'s темы с алертами',
+	'Search Alerts Topics'			=> 'Темы с алертами',
+	'Go to settings'				=> 'Настройки',
+	'Settings Name'					=> 'Fancy Alerts параметры',
+	'Settings Autoupdate Name'		=> 'Интервал автообновления',
+	'Settings Autoupdate Help'		=> 'В секундах. 0 — отключено. Рекомендуется — 60. (Необходим Fancy jQuery)',
+);
