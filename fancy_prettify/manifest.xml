@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_prettify</id>
+	<title>Fancy code highliter</title>
+	<description>A PunBB extension that allows syntax highlighting of source code snippets. </description>
+	<author>dimka.linux@gmail.com</author>
+	<version>0.5</version>
+
+
+	<!-- -->
+	<minversion>1.4b2</minversion>
+	<maxtestedon>1.4b2</maxtestedon>
+
+
+	<!-- -->
+	<hooks>
+
+		<!-- include js and css -->
+		<hook id="vt_pre_header_load,po_pre_header_load,dl_pre_header_load"><![CDATA[
+			if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/prettify.min.css')) {
+				$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/prettify.min.css');
+			} else {
+				$forum_loader->add_css($ext_info['url'].'/css/Oxygen/prettify.min.css');
+			}
+
+			$forum_loader->add_js($ext_info['url'].'/js/prettify.min.js', array('async' => true));
+		]]></hook>
+
+	</hooks>
+</extension>
