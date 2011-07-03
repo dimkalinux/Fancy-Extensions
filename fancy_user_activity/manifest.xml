@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_user_activity</id>
+	<title>Fancy User Activity</title>
+	<version>0.9</version>
+	<description>Logs security-related user activity</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<install><![CDATA[
+		if (!$forum_db->table_exists('fancy_user_activity')) {
+			$schema = array(
+				'FIELDS'	=>	array(
+					'id'			=> array(
+					'datatype'	=> 'SERIAL',
+					'allow_null'	=> false
+					),
+					'user_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'ip'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=>	'0',
+					),
+					'activity_type'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'activity_time'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+				),
+				'PRIMARY KEY'	=>	array('id')
+			);
+			$forum_db->create_table('fancy_user_activity', $schema);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_table('fancy_user_activity');
+	]]></uninstall>
+
+	<hooks>
+			<hook id="es_essentials"><![CDATA[
+				include_once $ext_info['path'].'/functions.inc.php';
+			]]></hook>
+
+
+			<hook id="li_login_pre_redirect"><![CDATA[
+				$fancy_user_activity = new Fancy_user_activity;
+				$fancy_user_activity->activity_login($user_id, get_remote_address());
+			]]></hook>
+
+			<hook id="pf_change_pass_normal_pre_redirect"><![CDATA[
+				$fancy_user_activity = new Fancy_user_activity;
+				$fancy_user_activity->activity_change_pass($id, get_remote_address());
+			]]></hook>
+
+			<hook id="pf_change_pass_key_pre_redirect"><![CDATA[
+				$fancy_user_activity = new Fancy_user_activity;
+				$fancy_user_activity->activity_change_keypass($id, get_remote_address());
+			]]></hook>
+
+			<hook id="pf_change_email_key_qr_update_email"><![CDATA[
+				$fancy_user_activity = new Fancy_user_activity;
+				$fancy_user_activity->activity_change_email($id, get_remote_address());
+			]]></hook>
+
+
+			<hook id="pf_change_details_modify_main_menu"><![CDATA[
+				if (!isset($lang_fancy_user_activity)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				if (isset($forum_page['main_menu']['admin'])) {
+					array_insert($forum_page['main_menu'], 'admin', '<li'.(($section == 'activity') ? ' class="active"' : '').'><a href="'.forum_link($forum_url['fancy_user_activity'], $id).'"><span>'.$lang_fancy_user_activity['Section activity'].'</span></a></li>', 'fancy_user_activity');
+				} else {
+					$forum_page['main_menu']['fancy_user_activity'] = '<li'.(($section == 'activity') ? ' class="active"' : '').'><a href="'.forum_link($forum_url['fancy_user_activity'], $id).'"><span>'.$lang_fancy_user_activity['Section activity'].'</span></a></li>';
+				}
+			]]></hook>
+
+
+			<hook id="pf_change_details_new_section"><![CDATA[
+				if ($section == 'activity') {
+					// Setup breadcrumbs
+					$forum_page['crumbs'] = array(
+						array($forum_config['o_board_title'], forum_link($forum_url['index'])),
+						array(sprintf($lang_profile['Users profile'], $user['username']), forum_link($forum_url['user'], $id)),
+						array(sprintf($lang_fancy_user_activity['Section activity']), forum_link($forum_url['fancy_user_activity'], $id)),
+					);
+
+					define('FORUM_PAGE', 'profile-activity');
+					require FORUM_ROOT.'header.php';
+
+					// START SUBST - <!-- forum_main -->
+					ob_start();
+?>
+					<div class="main-subhead">
+						<h2 class="hn"><span><?php printf(($forum_user['id'] == $id) ? $lang_fancy_user_activity['Activity welcome'] : $lang_fancy_user_activity['Activity welcome user'], forum_htmlencode($user['username'])) ?></span></h2>
+					</div>
+					<div class="main-content main-frm">
+<?php
+					$fancy_user_activity = new Fancy_user_activity;
+					$fancy_user_activity->show_activity();
+?>
+					</div>
+<?php
+
+					$tpl_temp = forum_trim(ob_get_contents());
+					$tpl_main = str_replace('<!-- forum_main -->', $tpl_temp, $tpl_main);
+					ob_end_clean();
+					// END SUBST - <!-- forum_main -->
+
+					require FORUM_ROOT.'footer.php';
+				}
+			]]></hook>
+
+			<hook id="co_modify_url_scheme"><![CDATA[
+				if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+					require_once $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+				} else {
+					require_once $ext_info['path'].'/url/Default.php';
+				}
+			]]></hook>
+	</hooks>
+</extension>
