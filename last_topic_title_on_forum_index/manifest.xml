@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>last_topic_title_on_forum_index</id>
+	<title>Last Topic Title</title>
+	<version>0.4.1</version>
+	<description>Show last posts title on index page</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3dev</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<install><![CDATA[
+		$forum_db->drop_index('forums', 'i_last_post_subject', false);
+		$forum_db->add_field('forums', 'last_post_subject', 'VARCHAR(255)', true, NULL);
+		$forum_db->add_index('forums', 'i_last_post_subject', array('last_post_subject'), false, false);
+
+		// Add extension options to the config table
+		if (!isset($forum_config['o_max_last_topic_title_length'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_max_last_topic_title_length\', \'30\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+
+		if (!isset($forum_config['o_last_topic_title_mode'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_last_topic_title_mode\', \'1\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_index('forums', 'i_last_post_subject', false);
+		$forum_db->drop_field('forums', 'last_post_subject');
+
+
+		// Delete extension options from the config
+		$query = array(
+			'DELETE'	=> 'config',
+			'WHERE'		=> 'conf_name in ("o_max_last_topic_title_length", "o_last_topic_title_mode")',
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+	]]></uninstall>
+
+
+	<hooks>
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			if (!isset($lang_last_topic_title_on_forum_index)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$forum_page['group_count'] = $forum_page['item_count'] = 0;
+?>
+
+			<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+				<h2 class="hn"><span><?php echo $lang_last_topic_title_on_forum_index['Name'] ?></span></h2>
+			</div>
+			<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+				<legend class="group-legend"><span><?php echo $lang_last_topic_title_on_forum_index['Name'] ?></span></legend>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box select">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+							<span><?php echo $lang_last_topic_title_on_forum_index['Select Mode'] ?></span>
+						</label><br/>
+						<span class="fld-input">
+							<select id="fld<?php echo $forum_page['fld_count'] ?>" name="form[last_topic_title_mode]">
+<?php
+	$last_topic_title_modes = array(1, 2);
+	foreach ($last_topic_title_modes as $ltt_mode) {
+		if ($forum_config['o_last_topic_title_mode'] == $ltt_mode) {
+			echo "\t\t\t\t\t\t\t\t".'<option value="'.$ltt_mode.'" selected="selected">'.$lang_last_topic_title_on_forum_index["Mode_{$ltt_mode}"].'</option>'."\n";
+		} else {
+			echo "\t\t\t\t\t\t\t\t".'<option value="'.$ltt_mode.'">'.$lang_last_topic_title_on_forum_index["Mode_{$ltt_mode}"].'</option>'."\n";
+		}
+	}
+?>
+							</select>
+						</span>
+					</div>
+				</div>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box sf-short text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_last_topic_title_on_forum_index['Input'] ?></span></label><br/>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[max_last_topic_title_length]" size="3" maxlength="3" value="<?php echo $forum_config['o_max_last_topic_title_length'] ?>" /></span>
+					</div>
+				</div>
+			</fieldset>
+<?php
+		]]></hook>
+
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['max_last_topic_title_length'] = (intval($form['max_last_topic_title_length']) > 0) ? intval($form['max_last_topic_title_length'], 10) : 0;
+			$form['last_topic_title_mode'] = (intval($form['last_topic_title_mode']) > 0) ? intval($form['last_topic_title_mode'], 10) : 1;
+		]]></hook>
+
+
+		<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+			if (!isset($lang_last_topic_title_on_forum_index)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($ext['id'] == 'last_topic_title_on_forum_index' && !isset($forum_page['ext_actions']['sync_forums'])) {
+				$forum_page['ext_actions']['sync_forums'] = '<span><a href="'.forum_link($forum_url['last_topic_title_sync'], array(generate_form_token('sync_forum_last_title'.$forum_user['id']))).'">'.$lang_last_topic_title_on_forum_index['Sync all forums'].'</a></span>';
+			}
+
+			if ($ext['id'] == 'last_topic_title_on_forum_index' && !isset($forum_page['ext_actions']['last_topic_title_on_forum_index_settings'])) {
+				$forum_page['ext_actions']['last_topic_title_on_forum_index_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_last_topic_title_on_forum_index['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+
+		<hook id="mi_new_action"><![CDATA[
+			if ($action == 'sync_forum_last_title') {
+				if (!$forum_user['is_admmod']) {
+					message($lang_common['No permission']);
+				}
+
+				// We validate the CSRF token. If it's set in POST and we're at this point, the token is valid.
+				// If it's in GET, we need to make sure it's valid.
+				if (!isset($_POST['csrf_token']) && (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== generate_form_token('sync_forum_last_title'.$forum_user['id']))) {
+					csrf_confirm_form();
+				}
+
+
+				$query = array(
+					'SELECT'	=> 'id',
+					'FROM'		=> 'forums'
+				);
+
+				$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+				while ($cur_forum = $forum_db->fetch_assoc($result)) {
+					sync_forum(intval($cur_forum['id'], 10));
+				}
+
+				redirect(forum_link($forum_url['admin_extensions_manage']), $lang_common['Cancel redirect']);
+			}
+		]]></hook>
+
+
+		<hook id="ed_pre_redirect"><![CDATA[
+			if ($can_edit_subject) {
+				sync_forum(intval($cur_post['fid'], 10));
+			}
+		]]></hook>
+
+
+		<hook id="fn_sync_forum_qr_update_forum"><![CDATA[
+			$lt_query = array(
+				'SELECT'	=> 't.subject',
+				'FROM'		=> 'topics AS t',
+				'WHERE'		=> 't.forum_id='.$forum_id.' AND t.moved_to is NULL',
+				'ORDER BY'	=> 't.last_post DESC',
+				'LIMIT'		=> '1'
+			);
+
+			$lt_result = $forum_db->query_build($lt_query) or error(__FILE__, __LINE__);
+			if ($forum_db->num_rows($lt_result)) {
+				list($last_post_subject) = $forum_db->fetch_row($lt_result);
+				$last_post_subject = '\''.$forum_db->escape($last_post_subject).'\'';
+			} else {
+				$last_post_subject = 'NULL';
+			}
+
+			$query['SET'] .= ', last_post_subject='.$last_post_subject;
+		]]></hook>
+
+
+		<hook id="in_qr_get_cats_and_forums"><![CDATA[
+			$query['SELECT'] .=', f.last_post_subject';
+		]]></hook>
+
+		<hook id="in_normal_row_pre_display"><![CDATA[
+			$last_topic_title_max_len = isset($forum_config['o_max_last_topic_title_length']) ? intval($forum_config['o_max_last_topic_title_length'], 10) : 0;
+			$last_topic_title_mode = isset($forum_config['o_last_topic_title_mode']) ? intval($forum_config['o_last_topic_title_mode'], 10) : 1;
+			$last_topic_title = $cur_forum['last_post_subject'];
+
+			if ($cur_forum['last_post'] != '') {
+				if ($last_topic_title == '') {
+					$forum_page['item_body']['info']['lastpost'] = '<li class="info-lastpost"><span class="label">'.$lang_index['No lastpost info'].'</span></li>';
+				} else {
+					if (($last_topic_title_max_len > 0) && (utf8_strlen($last_topic_title) > $last_topic_title_max_len)) {
+						$last_topic_title = utf8_substr($last_topic_title, 0, $last_topic_title_max_len).'…';
+					}
+
+					if ($last_topic_title_mode === 1) {
+						$forum_page['item_body']['info']['lastpost'] = '<li class="info-lastpost"><span class="label">'.$lang_index['Last post'].'</span> <strong><a href="'.forum_link($forum_url['post'], $cur_forum['last_post_id']).'" title="'.forum_htmlencode($cur_forum['last_post_subject']).'">'.forum_htmlencode($last_topic_title).'</a></strong> <cite>'.format_time($cur_forum['last_post']).'&nbsp;&mdash; '.forum_htmlencode($cur_forum['last_poster']).'</cite></li>';
+					} else {
+						$forum_page['item_body']['info']['lastpost'] = '<li class="info-lastpost"><span class="label">'.$lang_index['Last post'].'</span> <strong><a href="'.forum_link($forum_url['post'], $cur_forum['last_post_id']).'" title="'.forum_htmlencode($cur_forum['last_post_subject']).'">'.forum_htmlencode($last_topic_title).'</a></strong> <cite>'.format_time($cur_forum['last_post']).'</cite><cite>'.sprintf($lang_index['Last poster'], forum_htmlencode($cur_forum['last_poster'])).'</cite></li>';
+					}
+				}
+			}
+		]]></hook>
+
+	    <hook id="co_modify_url_scheme"><![CDATA[
+			if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+				require $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+			} else {
+				require $ext_info['path'].'/url/Default.php';
+			}
+	    ]]></hook>
+
+	</hooks>
+</extension>
