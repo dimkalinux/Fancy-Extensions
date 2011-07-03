@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_video_tag</id>
+	<title>Fancy Video Tag</title>
+	<version>0.3.3</version>
+	<description>New BBcode tag ([video]) to display embedded videos.</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.3</minversion>
+	<maxtestedon>1.3.4</maxtestedon>
+
+	<install><![CDATA[
+		if (!isset($forum_config['o_fancy_video_tag_html5'])) {
+			$query = array(
+				'INSERT'	=> 'conf_name, conf_value',
+				'INTO'		=> 'config',
+				'VALUES'	=> '\'o_fancy_video_tag_html5\', \'1\''
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		// Delete extension options from the config
+		$query = array(
+			'DELETE'	=> 'config',
+			'WHERE'		=> 'conf_name in (\'o_fancy_video_tag_html5\')',
+		);
+		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+	]]></uninstall>
+
+	<hooks>
+		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
+			if (!isset($fancy_video_tag)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			if ($ext['id'] == 'fancy_video_tag' && !isset($forum_page['ext_actions']['fancy_video_tag_settings'])) {
+				$forum_page['ext_actions']['fancy_video_tag_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$fancy_video_tag['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			if (!isset($fancy_video_tag)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			$forum_page['group_count'] = 0;
+
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $fancy_video_tag['Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_video_tag_html5]" value="1"<?php if ($forum_config['o_fancy_video_tag_html5'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $fancy_video_tag['HTML5 mode desc'] ?></label>
+						</div>
+					</div>
+				</fieldset>
+
+
+<?php
+		]]></hook>
+
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_video_tag_html5'] = (!isset($form['fancy_video_tag_html5']) || intval($form['fancy_video_tag_html5'], 10) <= 0) ? '0' : '1';
+		]]></hook>
+
+
+
+		<hook id="he_new_bbcode_link"><![CDATA[
+			if (!isset($fancy_video_tag)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+			$lang_help = array_merge($lang_help, $fancy_video_tag);
+?>
+			<div class="entry-content">
+				<code>[video]<?php echo $lang_help['video_uri'] ?>[/video]</code><span><?php echo $lang_help['produces'] ?></span>
+				<?php echo $lang_help['video_display'] ?>
+			</div>
+<?php
+		]]></hook>
+
+
+		<hook id="ps_start"><![CDATA[
+			if (!isset($fancy_video_tag)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+
+			// tag handling function
+			function fancy_video_tag_parse($videoUri) {
+				global $forum_config, $fancy_video_tag;
+
+				$match = array();
+
+				// dirty trick to play arround do_clickable
+				preg_match('`href="([^"]+)"`', stripslashes($videoUri), $match);
+				if (!empty($match[1])) {
+					$videoUri = $match[1];
+				}
+
+				// the services list
+				$service = array(
+					'youtube' => array(
+						'match'			=> '`youtube.com.*v=([-_a-z0-9]+)`i',
+						'uri'			=> 'http://www.youtube.com/v/%s&amp;rel=0',
+						'html5_uri'		=> '<iframe class="youtube-player" type="text/html" width="640" height="385" src="http://www.youtube.com/embed/%s" frameborder="0"></iframe>',
+						'width'			=> 640,
+						'height'		=> 385
+					),
+
+					'dailymotion' => array(
+						'match'			=> '`video/([a-z0-9]+)_`i',
+						'uri'			=> 'http://www.dailymotion.com/swf/video/%s&amp;amp;related=0&amp;amp;canvas=medium',
+						'html5_uri'		=> '<iframe frameborder="0" width="560" height="382" src="http://www.dailymotion.com/embed/video/%s?width=560&amp;theme=none"></iframe>',
+						'width'			=> 560,
+						'height'		=> 382
+					),
+
+					'vimeo' => array(
+						'match' 		=> '`/([0-9]+)`',
+						'uri' 			=> 'http://www.vimeo.com/moogaloop.swf?clip_id=%s&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;fullscreen=1',
+						'html5_uri'		=> '<iframe src="http://player.vimeo.com/video/%s" width="640" height="385" frameborder="0"></iframe>',
+						'width'			=> 640,
+						'height'		=> 385
+					),
+
+					'google' => array(
+						'match'			=> '`\?docid=(-?[0-9]+)`',
+						'uri'			=> 'http://video.google.com/googleplayer.swf?docId=%s',
+						'width'			=> 640,
+						'height'		=> 385
+					),
+
+					'rutube' => array(
+						'match'			=> '`[a-z0-9]+\.html\?v=([a-z0-9]+)`i',
+						'uri'			=> 'http://rutube.ru/tracks/%s',
+						'video_uri'		=> 'http://video.rutube.ru/%s',
+						'width'			=> 470,
+						'height'		=> 353
+					),
+
+					'facebook' => array(
+						'match'			=> '`facebook.com/.*video\.php\?v=([0-9]+)`i',
+						'uri'			=> 'http://www.facebook.com/v/%s',
+						'width'			=> 500,
+						'height'		=> 280
+					)
+				);
+
+				// extract service's name and check for support
+				preg_match('`^(?:http|https)://(?:[^\.]*\.)?([^\.]*)\.[^/]*/`i', $videoUri, $match);
+				if (empty($match[1]) || !array_key_exists($match[1], $service)) {
+					return '<a href="'.$videoUri.'">['.$fancy_video_tag["unknown_source"].']</a>';
+				}
+				$fancy_video_tag_provider = $service[$match[1]];
+
+				// EXTRACT VIDEO KEY
+				preg_match($fancy_video_tag_provider['match'], $videoUri, $match);
+				if (empty($match[1])) {
+					return '<a href="'.$videoUri.'">['.$fancy_video_tag["unknown_source"].']</a>';
+				}
+				$fancy_video_tag_video_key = $match[1];
+
+
+				// HTML5 MODE
+				if ($forum_config['o_fancy_video_tag_html5'] == '1' && isset($fancy_video_tag_provider['html5_uri'])) {
+					return '<div class="fancy_video_tag_player">'.sprintf($fancy_video_tag_provider['html5_uri'], $fancy_video_tag_video_key).'</div>';
+				}
+
+				// GET PLAYER URL
+				if (isset($fancy_video_tag_provider['video_uri'])) {
+					$playerUri = sprintf($fancy_video_tag_provider['video_uri'], $fancy_video_tag_video_key);
+				} else {
+					$playerUri = sprintf($fancy_video_tag_provider['uri'], $fancy_video_tag_video_key);
+				}
+
+				// RETURN PLAYER CODE
+				return '<div class="fancy_video_tag_player"><object type="application/x-shockwave-flash" data="'.$playerUri.'" width="'.$fancy_video_tag_provider['width'].'" height="'.$fancy_video_tag_provider['height'].'">'.
+					'<param name="movie" value="'.$playerUri.'" />'.
+					'<param name="wmode" value="transparent" />'.
+					'<param name="allowfullscreen" value="true" />'.
+					'<p><a href="'.$videoUri.'">['.$fancy_video_tag["no flash"].']</a></p>'.
+				'</object></div>';
+			}
+		]]></hook>
+
+
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			// add our tag to the list
+			$tags[] = 'video';
+			$tags_opened[] = 'video';
+			$tags_closed[] = 'video';
+			$tags_inline[] = 'video';
+			$tags_trim[] = 'video';
+
+			// we must allow url due to do_clickable
+			$tags_limit_bbcode['video'] = array('url');
+		]]></hook>
+
+
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			// ADD PARSER, EXCEPT SIG
+			if (!$is_signature) {
+				$pattern[] = '`\[video\]([^\[]+)\[/video\]`e';
+				$replace[] = 'fancy_video_tag_parse(\'$1\')';
+			}
+		]]></hook>
+
+
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			$tags_without_attr[] = 'video';
+		]]></hook>
+
+
+		<!-- REMOVE EMPTY TAGS -->
+		<hook id="ps_preparse_bbcode_end"><![CDATA[
+			if ($forum_config['p_message_bbcode'] == '1' && !$is_signature) {
+				while ($new_text = preg_replace('/\[(video)(?:\=[^\]]*)?\]\[\/\1\]/', '', $text)) {
+					if ($new_text != $text) {
+						$text = $new_text;
+					} else {
+						break;
+					}
+				}
+			}
+		]]></hook>
+
+
+		<hook id="hd_head"><![CDATA[
+			$forum_head['fancy_video_tag_css'] = '<style>.brd .entry-content div.fancy_video_tag_player { max-width: 60em !important; overflow: none !important; }</style>';
+		]]></hook>
+	</hooks>
+
+</extension>
