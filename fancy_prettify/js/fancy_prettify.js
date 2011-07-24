@@ -1478,7 +1478,7 @@ var REGEXP_PRECEDER_PATTERN = '(?:^^\\.?|[+-]|\\!|\\!=|\\!==|\\#|\\%|\\%=|&|&&|&
 
 
 // Start on page load
-PUNBB.common.addLoadEvent(function () {
+PUNBB.common.addDOMReadyEvent(function () {
 	var preTags = document.getElementsByTagName('pre'),
 		ok = 0;
 
