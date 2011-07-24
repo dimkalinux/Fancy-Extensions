@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_spoiler</id>
 	<title>Spoiler BBcode</title>
-	<version>0.5.6</version>
+	<version>0.5.7</version>
 	<description>Add BBcode tag «spoiler»</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -71,8 +71,8 @@
 		<!-- pun_bbcode - add styles for button -->
 		<hook id="pun_bbcode_styles_loaded"><![CDATA[
 			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
-				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/style/'.$forum_user['style'].'/style.css')) {
-					$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'/style.css', array('type' => 'url', 'media' => 'screen'));
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_spoiler.css')) {
+					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css', array('type' => 'url', 'media' => 'screen'));
 				} else {
 					// Optimze: inline for Oxygen
 					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image { background: url("'.$ext_info['url'].'/style/Oxygen/img/spoiler.png") 50% 50% no-repeat; }', array('type' => 'inline'));

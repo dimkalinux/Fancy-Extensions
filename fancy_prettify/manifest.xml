@@ -7,7 +7,7 @@
 	<title>Fancy code highliter</title>
 	<description>A PunBB extension that allows syntax highlighting of source code snippets. </description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.5.1</version>
+	<version>0.5.2</version>
 
 
 	<!-- -->
@@ -20,13 +20,13 @@
 
 		<!-- include js and css -->
 		<hook id="vt_pre_header_load,po_pre_header_load,dl_pre_header_load"><![CDATA[
-			if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/prettify.min.css')) {
-				$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/prettify.min.css');
+			if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_prettify.min.css')) {
+				$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_prettify.min.css');
 			} else {
-				$forum_loader->add_css($ext_info['url'].'/css/Oxygen/prettify.min.css');
+				$forum_loader->add_css($ext_info['url'].'/css/Oxygen/fancy_prettify.min.css');
 			}
 
-			$forum_loader->add_js($ext_info['url'].'/js/prettify.min.js', array('async' => true));
+			$forum_loader->add_js($ext_info['url'].'/js/fancy_prettify.min.js', array('async' => true));
 		]]></hook>
 
 	</hooks>

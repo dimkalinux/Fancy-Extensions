@@ -7,7 +7,7 @@
 	<title>Fancy AddThis</title>
 	<description>A PunBB extension that added AddThis widget</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.4.1</version>
+	<version>0.4.2</version>
 
 
 	<!-- -->
@@ -42,7 +42,7 @@
 
 
 			$forum_loader->add_js($fancy_addthis_js_env, array('type' => 'inline', 'weight' => 151));
-			$forum_loader->add_js($ext_info['url'].'/js/script.js', array('weight' => 152));
+			$forum_loader->add_js($ext_info['url'].'/js/fancy_addthis.min.js', array('weight' => 152));
 		]]></hook>
 
 

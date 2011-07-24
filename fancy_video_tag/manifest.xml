@@ -252,11 +252,11 @@
 		<!-- pun_bbcode - add styles for button -->
 		<hook id="pun_bbcode_styles_loaded"><![CDATA[
 			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
-				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/style/'.$forum_user['style'].'/style.css')) {
-					$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'/style.css', array('type' => 'url', 'media' => 'screen'));
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_video_tag.min.css')) {
+					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_video_tag.min.css', array('type' => 'url', 'media' => 'screen'));
 				} else {
 					// Optimze: inline for Oxygen
-					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_video.image { background: url("'.$ext_info['url'].'/style/Oxygen/img/video.png") 50% 50% no-repeat; }', array('type' => 'inline'));
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_video.image { background: url("'.$ext_info['url'].'/css/Oxygen/img/video.png") 50% 50% no-repeat; }', array('type' => 'inline'));
 				}
 			}
 		]]></hook>
