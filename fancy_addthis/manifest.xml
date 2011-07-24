@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_addthis</id>
+	<title>Fancy AddThis</title>
+	<description>A PunBB extension that added AddThis widget</description>
+	<author>dimka.linux@gmail.com</author>
+	<version>0.4.1</version>
+
+
+	<!-- -->
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+
+	<!-- -->
+	<hooks>
+
+		<!-- include js -->
+		<hook id="vt_pre_header_load"><![CDATA[
+			// Lang
+			if (!isset($lang_fancy_addthis)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			// CSS for disabled JS hide bar
+			$forum_loader->add_css('.fancy-addthis-post { display: none; }', array('type' => 'inline', 'noscript' => true));
+
+			$forum_loader->add_js('//s7.addthis.com/js/250/addthis_widget.js#domready=1', array('weight' => 150));
+
+			$fancy_addthis_js_env = '
+				PUNBB.env.fancy_addthis = {
+					show_onclick: "",
+					pubid: "",
+				};';
+
+
+			$forum_loader->add_js($fancy_addthis_js_env, array('type' => 'inline', 'weight' => 151));
+			$forum_loader->add_js($ext_info['url'].'/js/script.js', array('weight' => 152));
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="vt_row_pre_post_actions_merge" priority="7"><![CDATA[
+			$forum_page['post_actions']['fancy_addthis_code'] = '<span class="visual-hidden fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'"><span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.$lang_fancy_addthis['Share'].'</span></span>';
+		]]></hook>
+	</hooks>
+</extension>
