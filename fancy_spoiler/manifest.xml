@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_spoiler</id>
+	<title>Spoiler BBcode</title>
+	<version>0.3.1</version>
+	<description>Add BBcode tag «spoiler»</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+
+	<hooks>
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			global $lang_fancy_spoiler;
+			if (!isset($lang_fancy_spoiler)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					include_once $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			$pattern[] = '#\[spoiler\](.*?)\[/spoiler\]#s';
+			$replace[] = '</p><span class="js_link visual-hidden fancy_spoiler_switcher" data-lang-open="'.$lang_fancy_spoiler["spoiler_open"].'" data-lang-close="'.$lang_fancy_spoiler["spoiler_close"].'">'.$lang_fancy_spoiler["spoiler_open"].'</span><div class="fancy_spoiler">$1</div><p>';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			$tags_without_attr[] = 'spoiler';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags_block[] = 'spoiler';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="ps_preparse_bbcode_start"><![CDATA[
+			$tags[] = 'spoiler';
+			$tags_opened[] = 'spoiler';
+			$tags_closed[] = 'spoiler';
+			$tags_fix[] = 'spoiler';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name'	=> 'fancy_spoiler', 'title' => 'spoiler', 'tag' => 'spoiler', 'image' => true));
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="vt_pre_header_load"><![CDATA[
+			$forum_loader->add_css('.fancy_spoiler { display: none;	} .ie6 .fancy_spoiler_switcher, .ie7 .fancy_spoiler_switcher { zoom: 1;	display: inline; } .fancy_spoiler_switcher { display: inline-block;	margin-bottom: .35em; }', array('type' => 'inline'));
+			$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'noscript' => true));
+
+			$forum_loader->add_js($ext_info['url'].'/js/fancy_spoiler.min.js', array('type' => 'url', 'async' => true));
+		]]></hook>
+	</hooks>
+</extension>
