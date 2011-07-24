@@ -4,37 +4,27 @@
 <extension engine="1.0">
 	<id>fancy_video_tag</id>
 	<title>Fancy Video Tag</title>
-	<version>0.3.3</version>
+	<version>0.4.2</version>
 	<description>New BBcode tag ([video]) to display embedded videos.</description>
 	<author>dimka.linux@gmail.com</author>
 
-	<minversion>1.3</minversion>
-	<maxtestedon>1.3.4</maxtestedon>
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
 
 	<install><![CDATA[
-		if (!isset($forum_config['o_fancy_video_tag_html5'])) {
-			$query = array(
-				'INSERT'	=> 'conf_name, conf_value',
-				'INTO'		=> 'config',
-				'VALUES'	=> '\'o_fancy_video_tag_html5\', \'1\''
-			);
-			$forum_db->query_build($query) or error(__FILE__, __LINE__);
-		}
+		forum_config_add('o_fancy_video_tag_html5', '1');
 	]]></install>
 
 	<uninstall><![CDATA[
-		// Delete extension options from the config
-		$query = array(
-			'DELETE'	=> 'config',
-			'WHERE'		=> 'conf_name in (\'o_fancy_video_tag_html5\')',
-		);
-		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		forum_config_remove('o_fancy_video_tag_html5');
 	]]></uninstall>
+
 
 	<hooks>
 		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
 			if (!isset($fancy_video_tag)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
 				} else {
 					require $ext_info['path'].'/lang/English/lang.php';
@@ -48,7 +38,7 @@
 
 		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
 			if (!isset($fancy_video_tag)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
 				} else {
 					require $ext_info['path'].'/lang/English/lang.php';
@@ -56,8 +46,7 @@
 			}
 
 			$forum_page['group_count'] = 0;
-
-?>
+			?>
 				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
 					<h2 class="hn"><span><?php echo $fancy_video_tag['Name'] ?></span></h2>
 				</div>
@@ -69,9 +58,7 @@
 						</div>
 					</div>
 				</fieldset>
-
-
-<?php
+			<?php
 		]]></hook>
 
 
@@ -80,10 +67,9 @@
 		]]></hook>
 
 
-
 		<hook id="he_new_bbcode_link"><![CDATA[
 			if (!isset($fancy_video_tag)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
 				} else {
 					require $ext_info['path'].'/lang/English/lang.php';
@@ -101,13 +87,12 @@
 
 		<hook id="ps_start"><![CDATA[
 			if (!isset($fancy_video_tag)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
 				} else {
 					require $ext_info['path'].'/lang/English/lang.php';
 				}
 			}
-
 
 			// tag handling function
 			function fancy_video_tag_parse($videoUri) {
@@ -182,7 +167,7 @@
 				if (empty($match[1])) {
 					return '<a href="'.$videoUri.'">['.$fancy_video_tag["unknown_source"].']</a>';
 				}
-				$fancy_video_tag_video_key = $match[1];
+				$fancy_video_tag_video_key = forum_htmlencode($match[1]);
 
 
 				// HTML5 MODE
@@ -208,8 +193,8 @@
 		]]></hook>
 
 
+		<!-- add video tag to the list -->
 		<hook id="ps_preparse_tags_start"><![CDATA[
-			// add our tag to the list
 			$tags[] = 'video';
 			$tags_opened[] = 'video';
 			$tags_closed[] = 'video';
@@ -250,7 +235,30 @@
 
 
 		<hook id="hd_head"><![CDATA[
-			$forum_head['fancy_video_tag_css'] = '<style>.brd .entry-content div.fancy_video_tag_player { max-width: 60em !important; overflow: none !important; }</style>';
+			if (defined('FORUM_PAGE')) {
+				if (in_array(FORUM_PAGE, array('postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+					$forum_loader->add_css('.entry-content div.fancy_video_tag_player { max-width: 60em !important; overflow: none !important; }', array('type' => 'inline', 'media' => 'screen'));
+				}
+			}
+		]]></hook>
+
+
+		<!-- pun_bbcode - add button -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name'	=> 'fancy_video', 'title' => 'video', 'tag' => 'video', 'image' => true));
+		]]></hook>
+
+
+		<!-- pun_bbcode - add styles for button -->
+		<hook id="pun_bbcode_styles_loaded"><![CDATA[
+			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/style/'.$forum_user['style'].'/style.css')) {
+					$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'/style.css', array('type' => 'url', 'media' => 'screen'));
+				} else {
+					// Optimze: inline for Oxygen
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_video.image { background: url("'.$ext_info['url'].'/style/Oxygen/img/video.png") 50% 50% no-repeat; }', array('type' => 'inline'));
+				}
+			}
 		]]></hook>
 	</hooks>
 

@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_spoiler</id>
 	<title>Spoiler BBcode</title>
-	<version>0.3.1</version>
+	<version>0.5.6</version>
 	<description>Add BBcode tag «spoiler»</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -14,21 +14,6 @@
 
 
 	<hooks>
-		<hook id="ps_do_bbcode_replace"><![CDATA[
-			global $lang_fancy_spoiler;
-			if (!isset($lang_fancy_spoiler)) {
-				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
-					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
-				} else {
-					include_once $ext_info['path'].'/lang/English/lang.php';
-				}
-			}
-
-			$pattern[] = '#\[spoiler\](.*?)\[/spoiler\]#s';
-			$replace[] = '</p><span class="js_link visual-hidden fancy_spoiler_switcher" data-lang-open="'.$lang_fancy_spoiler["spoiler_open"].'" data-lang-close="'.$lang_fancy_spoiler["spoiler_close"].'">'.$lang_fancy_spoiler["spoiler_open"].'</span><div class="fancy_spoiler">$1</div><p>';
-		]]></hook>
-
-
 		<!-- -->
 		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
 			$tags_without_attr[] = 'spoiler';
@@ -51,17 +36,48 @@
 
 
 		<!-- -->
-		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
-			$this->add_button(array('name'	=> 'fancy_spoiler', 'title' => 'spoiler', 'tag' => 'spoiler', 'image' => true));
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			global $lang_fancy_spoiler;
+			if (!isset($lang_fancy_spoiler)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					include $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			$pattern[] = '#\[spoiler\](.*?)\[/spoiler\]#s';
+			$replace[] = '</p><p class="visual-hidden fancy_spoiler_switcher"><span class="js_link" data-lang-open="'.$lang_fancy_spoiler["spoiler_open"].'" data-lang-close="'.$lang_fancy_spoiler["spoiler_close"].'">'.$lang_fancy_spoiler["spoiler_open"].'</span></p><div class="fancy_spoiler">$1</div><p>';
 		]]></hook>
 
 
 		<!-- -->
-		<hook id="vt_pre_header_load"><![CDATA[
-			$forum_loader->add_css('.fancy_spoiler { display: none;	} .ie6 .fancy_spoiler_switcher, .ie7 .fancy_spoiler_switcher { zoom: 1;	display: inline; } .fancy_spoiler_switcher { display: inline-block;	margin-bottom: .35em; }', array('type' => 'inline'));
-			$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'noscript' => true));
+		<hook id="hd_head"><![CDATA[
+			if (defined('FORUM_PAGE')) {
+				if (in_array(FORUM_PAGE, array('postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+					$forum_loader->add_css('.fancy_spoiler { display: none; padding: .35em 0; }',	array('type' => 'inline', 'media' => 'screen'));
+					$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'media' => 'screen', 'noscript' => true));
+					$forum_loader->add_js($ext_info['url'].'/js/fancy_spoiler.min.js', array('type' => 'url', 'async' => true));
+				}
+			}
+		]]></hook>
 
-			$forum_loader->add_js($ext_info['url'].'/js/fancy_spoiler.min.js', array('type' => 'url', 'async' => true));
+
+		<!-- pun_bbcode - add button -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name'	=> 'fancy_spoiler', 'title' => 'spoiler', 'tag' => 'spoiler', 'image' => true));
+		]]></hook>
+
+		<!-- pun_bbcode - add styles for button -->
+		<hook id="pun_bbcode_styles_loaded"><![CDATA[
+			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/style/'.$forum_user['style'].'/style.css')) {
+					$forum_loader->add_css($ext_info['url'].'/style/'.$forum_user['style'].'/style.css', array('type' => 'url', 'media' => 'screen'));
+				} else {
+					// Optimze: inline for Oxygen
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image { background: url("'.$ext_info['url'].'/style/Oxygen/img/spoiler.png") 50% 50% no-repeat; }', array('type' => 'inline'));
+				}
+			}
 		]]></hook>
 	</hooks>
 </extension>
