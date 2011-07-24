@@ -71,7 +71,7 @@
 		<!-- pun_bbcode - add styles for button -->
 		<hook id="pun_bbcode_styles_loaded"><![CDATA[
 			if ($forum_user['pun_bbcode_use_buttons'] == '1') {
-				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_spoiler.css')) {
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css')) {
 					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css', array('type' => 'url', 'media' => 'screen'));
 				} else {
 					// Optimze: inline for Oxygen
