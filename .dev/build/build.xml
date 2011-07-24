@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Webtasks example" default="init">
+
+	<description>Build PunBB Fancy Extensions</description>
+	<import file="webtasks.xml"/>
+	<property name="webtasks.dir" value="${basedir}" />
+
+
+	<!-- SOURCE DIRS -->
+	<property name="src-root" value="${basedir}/../../" />
+
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag">
+		<echo>Build done.</echo>
+	</target>
+
+
+	<!-- FANCY ADDTHIS -->
+	<target name="fancy_addthis">
+		<compress-js-lib tofile="${src-root}/fancy_addthis/js/fancy_addthis.min.js" force="true">
+			<filelist dir="${src-root}/fancy_addthis/js/">
+				<file name="fancy_addthis.js" />
+			</filelist>
+		</compress-js-lib>
+	</target>
+
+
+	<!-- FANCY PRETTIFY -->
+	<target name="fancy_prettify">
+		<compress-js-lib tofile="${src-root}/fancy_prettify/js/fancy_prettify.min.js" force="true">
+			<filelist dir="${src-root}/fancy_prettify/js/">
+				<file name="fancy_prettify.js" />
+			</filelist>
+		</compress-js-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_prettify/css/Oxygen/fancy_prettify.min.css" force="true">
+			<filelist dir="${src-root}/fancy_prettify/css/Oxygen/">
+				<file name="fancy_prettify.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+
+
+	<!-- FANCY SPOILER -->
+	<target name="fancy_spoiler">
+		<compress-js-lib tofile="${src-root}/fancy_spoiler/js/fancy_spoiler.min.js" force="true">
+			<filelist dir="${src-root}/fancy_spoiler/js/">
+				<file name="fancy_spoiler.js" />
+			</filelist>
+		</compress-js-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_spoiler/css/Oxygen/fancy_spoiler.min.css" force="true">
+			<filelist dir="${src-root}/fancy_spoiler/css/Oxygen/">
+				<file name="fancy_spoiler.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+
+
+	<!-- FANCY VIDEO TAG -->
+	<target name="fancy_video_tag">
+		<compress-css-lib tofile="${src-root}/fancy_video_tag/css/Oxygen/fancy_video_tag.min.css" force="true">
+			<filelist dir="${src-root}/fancy_video_tag/css/Oxygen/">
+				<file name="fancy_video_tag.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+</project>
