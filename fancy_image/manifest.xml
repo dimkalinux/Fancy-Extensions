@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_image</id>
+	<title>Fancy Image</title>
+	<version>0.6.6</version>
+	<description>Show image from image hostings in fancybox</description>
+	<author>dimkalinux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+	<dependencies>
+		<dependency>fancy_jquery</dependency>
+	</dependencies>
+
+
+	<hooks>
+		<hook id="ps_handle_img_tag_end" priority="3"><![CDATA[
+			if (!$is_signature && $forum_user['show_img'] == '0') {
+				$img_tag = '<a href="'.$url.'" class="fancy_zoom">&lt;'.$lang_common['Image link'].'&gt;</a>';
+			}
+
+			if (!$is_signature && $forum_user['show_img'] != '0') {
+
+				// PIC.LG.UA
+				if (FALSE !== strpos($url, 'pic.lg.ua')) {
+					$preview_url = preg_replace('!^(http://pic.lg.ua/x)/(\d+)/(.*)/(sm|md)(_.+)!is', '${1}/${2}/${3}/pv${5}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'imageshack.us')) {
+					// IMAGESHACK
+					$preview_url = preg_replace('!^(http://img\d+\.imageshack\.us)/(img\d+)/(\d+)/(.+)\.th\.(.+)!is', '${1}/${2}/${3}/${4}.${5}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'radikal.ru')) {
+					// RADIKAL
+					$preview_url = preg_replace('!^(http://.+\.radikal.ru)/(.*)/(.*)(t|x)\.(jpg|jpeg|png|gif|bmp|tif|tiff)!is', '${1}/${2}/${3}.${5}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'photobucket.com')) {
+					// PHOTOBUCKET
+					$preview_url = preg_replace('!^(http://i\d+\.photobucket\.com/albums)/(x\d+)/(.+)/th_(.+)!is', '${1}/${2}/${3}/${4}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'piccy.info')) {
+					// PICCY.INFO
+					$preview_url = preg_replace('!^(http://.*piccy.info/.*/\d+/\d+/\d+/)(.*)_(240|500|800)(\..*)!is', '${1}${2}${4}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'imagepost.ru')) {
+					// IMAGEPOST.RU
+					$preview_url = preg_replace('!^(http://)(imagepost\.ru)/(thumbs)/(\d+)/(.*)!is', '${1}${2}/images/${4}/${5}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'ipicture.ru')) {
+					// IPICTURE.RU
+					$preview_url = preg_replace('!^(http://)(ipicture\.ru/uploads/)(\d+)/(thumbs)/(.*)!is', '${1}${2}${3}/${5}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				} else if (FALSE !== strpos($url, 'savepic.')) {
+					// SAVEPIC
+					$preview_url = preg_replace('!^(http://savepic\.)(org|net)/(\d+)m(\..+)!is', '${1}${2}/${3}${4}', $url);
+					$img_tag = '<span class="postimg fancyimagethumbs"><img data-fancy="false" src="'.$url.'" alt="'.forum_htmlencode($alt).'" rel="'.forum_htmlencode($preview_url).'"/></span>';
+				}
+			}
+		]]></hook>
+
+
+		<hook id="hd_head"><![CDATA[
+		    if (defined('FORUM_PAGE')) {
+			if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+				// LOAD LANG
+				if (!isset($lang_fancy_image)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_loader->add_css('a.fancy_zoom:hover { text-decoration: none !important; }', array('type' => 'inline'));
+
+				$fancy_image_js_env = '
+					PUNBB.env.fancy_image = {
+						lang_title: "'.forum_htmlencode($lang_fancy_image['Original']).'",
+					};';
+
+
+				$forum_loader->add_js($fancy_image_js_env, array('type' => 'inline'));
+			 	$forum_loader->add_js($ext_info['url'].'/js/fancy_image.min.js', array('type' => 'url', 'async' => true));
+			}
+		    }
+		]]></hook>
+	</hooks>
+</extension>
