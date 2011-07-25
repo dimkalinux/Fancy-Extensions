@@ -9,7 +9,7 @@
 	<!-- SOURCE DIRS -->
 	<property name="src-root" value="${basedir}/../../" />
 
-	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag">
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image">
 		<echo>Build done.</echo>
 	</target>
 
@@ -63,5 +63,15 @@
 				<file name="fancy_video_tag.css" />
 			</filelist>
 		</compress-css-lib>
+	</target>
+
+
+	<!-- FANCY IMAGE -->
+	<target name="fancy_image">
+		<compress-js-lib tofile="${src-root}/fancy_image/js/fancy_image.min.js" force="true">
+			<filelist dir="${src-root}/fancy_image/js/">
+				<file name="fancy_image.js" />
+			</filelist>
+		</compress-js-lib>
 	</target>
 </project>

@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_video_tag</id>
 	<title>Fancy Video Tag</title>
-	<version>0.4.2</version>
+	<version>0.4.3</version>
 	<description>New BBcode tag ([video]) to display embedded videos.</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -236,7 +236,7 @@
 
 		<hook id="hd_head"><![CDATA[
 			if (defined('FORUM_PAGE')) {
-				if (in_array(FORUM_PAGE, array('postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
 					$forum_loader->add_css('.entry-content div.fancy_video_tag_player { max-width: 60em !important; overflow: none !important; }', array('type' => 'inline', 'media' => 'screen'));
 				}
 			}

@@ -7,7 +7,7 @@
 	<title>Fancy code highliter</title>
 	<description>A PunBB extension that allows syntax highlighting of source code snippets. </description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.6</version>
+	<version>0.6.1</version>
 
 
 	<!-- -->
@@ -21,7 +21,7 @@
 		<!-- include js and css -->
 		<hook id="hd_head"><![CDATA[
 			if (defined('FORUM_PAGE')) {
-				if (in_array(FORUM_PAGE, array('postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
 					if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_prettify.min.css')) {
 						$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_prettify.min.css');
 					} else {
