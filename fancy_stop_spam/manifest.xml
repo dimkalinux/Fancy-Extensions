@@ -1,0 +1,969 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_stop_spam</id>
+	<title>Fancy Stop SPAM</title>
+	<version>0.9.8</version>
+	<description>Enlarge? No, thanks!</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+
+	<install><![CDATA[
+		// Add extension options to the config table
+		forum_config_add('o_fancy_stop_spam_max_links', '2');
+		forum_config_add('o_fancy_stop_spam_max_guest_links', '1');
+		forum_config_add('o_fancy_stop_spam_register_form_honeypot', '1');
+		forum_config_add('o_fancy_stop_spam_register_form_timeout', '1');
+		forum_config_add('o_fancy_stop_spam_register_form_timezone', '1');
+		forum_config_add('o_fancy_stop_spam_login_form_honeypot', '0');
+		forum_config_add('o_fancy_stop_spam_post_form_honeypot', '1');
+		forum_config_add('o_fancy_stop_spam_check_identical_posts', '0');
+		forum_config_add('o_fancy_stop_spam_check_signature', '0');
+		forum_config_add('o_fancy_stop_spam_check_submit', '1');
+		forum_config_add('o_fancy_stop_spam_use_logs', '0');
+
+
+		if (!$forum_db->table_exists('fancy_stop_spam_identical_posts'))
+		{
+			$schema = array(
+				'FIELDS' => array(
+					'id'		=> array(
+						'datatype'		=> 'SERIAL',
+						'allow_null'	=> false
+					),
+					'poster_id'			=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false
+					),
+					'post_id'	=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false
+					),
+					'post_hash' => array(
+						'datatype'		=> 'VARCHAR(40)',
+						'allow_null'	=> false
+					),
+					'posted'			=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false
+					),
+				),
+				'PRIMARY KEY'	=> array('id'),
+				'ENGINE'		=> 'HEAP'
+			);
+			$forum_db->create_table('fancy_stop_spam_identical_posts', $schema);
+		}
+
+
+		if (!$forum_db->table_exists('fancy_stop_spam_logs'))
+		{
+			$schema = array(
+				'FIELDS'	=>	array(
+					'id'			=> array(
+						'datatype'	=> 'SERIAL',
+						'allow_null'	=> false
+					),
+					'user_id'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'ip'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=>	'0',
+					),
+					'activity_type'	=>	array(
+						'datatype'	=> 'INT(10)',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'activity_time'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=> '0',
+					),
+					'comment' => array(
+						'datatype'		=> 'VARCHAR(255)',
+						'allow_null'	=> false,
+					),
+				),
+				'PRIMARY KEY'	=>	array('id')
+			);
+			$forum_db->create_table('fancy_stop_spam_logs', $schema);
+		}
+
+		$forum_db->add_field('users', 'fancy_stop_spam_bot', 'INT(10) UNSIGNED', false, 0);
+	]]></install>
+
+
+	<uninstall><![CDATA[
+		// Delete extension options from the config
+		forum_config_remove(array(
+			'o_fancy_stop_spam_use_logs',
+			'o_fancy_stop_spam_check_submit',
+			'o_fancy_stop_spam_check_signature',
+			'o_fancy_stop_spam_register_form_timezone',
+			'o_fancy_stop_spam_check_identical_posts',
+			'o_fancy_stop_spam_register_form_timeout',
+			'o_fancy_stop_spam_register_form_honeypot',
+			'o_fancy_stop_spam_login_form_honeypot',
+			'o_fancy_stop_spam_post_form_honeypot',
+			'o_fancy_stop_spam_max_links',
+			'o_fancy_stop_spam_max_guest_links',
+		));
+
+		$forum_db->drop_table('fancy_stop_spam_identical_posts');
+		$forum_db->drop_table('fancy_stop_spam_logs');
+		$forum_db->drop_field('users', 'fancy_stop_spam_bot');
+	]]></uninstall>
+
+
+	<hooks>
+		<!-- OPTIONS Block -->
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $lang_fancy_stop_spam['Settings Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><span><?php echo $lang_fancy_stop_spam['Name'] ?></span></legend>
+
+
+					<!-- REGISTER FORM -->
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_stop_spam['Register form'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_register_form_honeypot]" value="1"<?php if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Honeypot'] ?></label>
+							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_register_form_timeout]" value="1"<?php if ($forum_config['o_fancy_stop_spam_register_form_timeout'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Timeout'] ?></label>
+							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_register_form_timezone]" value="1"<?php if ($forum_config['o_fancy_stop_spam_register_form_timezone'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Timezone'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+					<!-- LOGIN FORM -->
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_stop_spam['Login form'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_login_form_honeypot]" value="1"<?php if ($forum_config['o_fancy_stop_spam_login_form_honeypot'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Honeypot'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+					<!-- POST FORM -->
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_stop_spam['Post form'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_post_form_honeypot]" value="1"<?php if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Honeypot'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+					<!-- OTHER METHOD -->
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_stop_spam['Other Methods'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_check_identical_posts]" value="1"<?php if ($forum_config['o_fancy_stop_spam_check_identical_posts'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Check Identical'] ?></label>
+							</div>
+
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_check_signature]" value="1"<?php if ($forum_config['o_fancy_stop_spam_check_signature'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Signature Check Method'] ?></label>
+							</div>
+
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_check_submit]" value="1"<?php if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Submit Check Method'] ?></label>
+							</div>
+
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_use_logs]" value="1"<?php if ($forum_config['o_fancy_stop_spam_use_logs'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable Logs'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+
+					<!-- FIRST POST METHOD -->
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box sf-short text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['First Post Max Links'] ?></span><small><?php echo $lang_fancy_stop_spam['First Post Max Links Help'] ?></small></label><br />
+							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_stop_spam_max_links]" size="3" maxlength="3" value="<?php echo forum_htmlencode($forum_config['o_fancy_stop_spam_max_links']) ?>" /></span>
+						</div>
+					</div>
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box sf-short text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['First Post Guest Max Links'] ?></span><small><?php echo $lang_fancy_stop_spam['First Post Guest Max Links Help'] ?></small></label><br />
+							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_stop_spam_max_guest_links]" size="3" maxlength="3" value="<?php echo forum_htmlencode($forum_config['o_fancy_stop_spam_max_guest_links']) ?>" /></span>
+						</div>
+					</div>
+
+
+				</fieldset>
+<?php
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_stop_spam_max_links'] = (!isset($form['fancy_stop_spam_max_links']) ||  !is_numeric($form['fancy_stop_spam_max_links'])) ? '-1' : intval($form['fancy_stop_spam_max_links'], 10);
+			$form['fancy_stop_spam_max_guest_links'] = (!isset($form['fancy_stop_spam_max_guest_links']) ||  !is_numeric($form['fancy_stop_spam_max_guest_links'])) ? '-1' : intval($form['fancy_stop_spam_max_guest_links'], 10);
+
+			// Save settings
+			if (!isset($form['fancy_stop_spam_register_form_honeypot']) || $form['fancy_stop_spam_register_form_honeypot'] != '1') $form['fancy_stop_spam_register_form_honeypot'] = '0';
+			if (!isset($form['fancy_stop_spam_register_form_timeout']) || $form['fancy_stop_spam_register_form_timeout'] != '1') $form['fancy_stop_spam_register_form_timeout'] = '0';
+			if (!isset($form['fancy_stop_spam_register_form_timezone']) || $form['fancy_stop_spam_register_form_timezone'] != '1') $form['fancy_stop_spam_register_form_timezone'] = '0';
+
+			if (!isset($form['fancy_stop_spam_login_form_honeypot']) || $form['fancy_stop_spam_login_form_honeypot'] != '1') $form['fancy_stop_spam_login_form_honeypot'] = '0';
+			if (!isset($form['fancy_stop_spam_post_form_honeypot']) || $form['fancy_stop_spam_post_form_honeypot'] != '1') $form['fancy_stop_spam_post_form_honeypot'] = '0';
+			if (!isset($form['fancy_stop_spam_check_identical_posts']) || $form['fancy_stop_spam_check_identical_posts'] != '1') $form['fancy_stop_spam_check_identical_posts'] = '0';
+			if (!isset($form['fancy_stop_spam_check_signature']) || $form['fancy_stop_spam_check_signature'] != '1') $form['fancy_stop_spam_check_signature'] = '0';
+			if (!isset($form['fancy_stop_spam_check_submit']) || $form['fancy_stop_spam_check_submit'] != '1') $form['fancy_stop_spam_check_submit'] = '0';
+			if (!isset($form['fancy_stop_spam_use_logs']) || $form['fancy_stop_spam_use_logs'] != '1') $form['fancy_stop_spam_use_logs'] = '0';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="aex_section_manage_pre_ext_actions" priority="10"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($ext['id'] == 'fancy_stop_spam' && !isset($forum_page['ext_actions']['fancy_stop_spam_settings'])) {
+				$forum_page['ext_actions']['fancy_stop_spam_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_stop_spam['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+
+
+		<!-- ============== ACTIVATE ACCOUNT FORM PART =============== -->
+		<!-- Add MARK for SUBMIT value -->
+		<hook id="pf_change_pass_key_fieldset_end"><![CDATA[
+			$lang_common['Submit'] .= FANCY_STOP_SPAM_SUBMIT_MARK;
+		]]></hook>
+
+
+
+		<hook id="pf_change_pass_key_form_submitted"><![CDATA[
+			// CHECK SUBMIT VALUE
+			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') {
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				if ($_POST['update'] != $lang_common['Submit'].FANCY_STOP_SPAM_SUBMIT_MARK) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_ACTIVATE_SUBMIT, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Activate bot message']);
+				}
+			}
+
+			// CHECK HONEY FIELDS
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
+				if (!isset($_POST['form_honey_key_id'])) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_ACTIVATE_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Activate bot message']);
+				} else {
+					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
+					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
+						fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_ACTIVATE_HONEYPOT, $forum_user['id'], get_remote_address());
+						message($lang_fancy_stop_spam['Activate bot message']);
+					}
+				}
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pf_change_pass_key_pre_header_load"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
+				$fancy_stop_spam_post_key_id = uniqid();
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pf_change_pass_key_pre_fieldset"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
+			?>
+				<div class="hidden">
+					<input type="hidden" name="form_honey_key_id" value="<?php echo $fancy_stop_spam_post_key_id; ?>" />
+					<input type="hidden" name="form_fancy_stop_spam_time" value="<?php echo time(); ?>" />
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pf_change_pass_key_pre_new_password"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
+						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+
+		<!-- ============== REGISTER FORM PART =============== -->
+		<!-- Add MARK for SUBMIT value -->
+		<hook id="rg_register_group_end"><![CDATA[
+			$lang_profile['Register'] .= FANCY_STOP_SPAM_SUBMIT_MARK;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="rg_register_pre_header_load"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
+				$fancy_stop_spam_post_key_id = uniqid();
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="rg_register_pre_group"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
+			?>
+				<div class="hidden">
+					<input type="hidden" name="form_honey_key_id" value="<?php echo $fancy_stop_spam_post_key_id; ?>" />
+					<input type="hidden" name="form_fancy_stop_spam_time" value="<?php echo time(); ?>" />
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="rg_register_pre_password"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1'):
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
+						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="rg_register_form_submitted"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+
+			// CHECK HONEY FIELDS
+			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
+				if (!isset($_POST['form_honey_key_id'])) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Register bot message']);
+				} else {
+					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
+					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
+						fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_HONEYPOT, $forum_user['id'], get_remote_address());
+						message($lang_fancy_stop_spam['Register bot message']);
+					}
+				}
+			}
+
+			// CHECK FORM FILL TIME
+			if ($forum_config['o_fancy_stop_spam_register_form_timeout'] == '1') {
+				if (!isset($_POST['form_fancy_stop_spam_time'])) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_TIMEOUT, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Register bot message']);
+				} else {
+					$fancy_stop_spam_form_fill_time = time() - intval($_POST['form_fancy_stop_spam_time'], 10);
+					if ($fancy_stop_spam_form_fill_time < FANCY_STOP_SPAM_USER_MIN_FORM_FILL_TIME) {
+						fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_TIMEOUT, $forum_user['id'], get_remote_address(), $fancy_stop_spam_form_fill_time);
+						$errors[] = $lang_fancy_stop_spam['Register bot timeout message'];
+					}
+				}
+			}
+
+			// CHECK TIMEZONE
+			if ($forum_config['o_fancy_stop_spam_register_form_timezone'] == '1') {
+				if (isset($_POST['timezone']) && $_POST['timezone'] == '-12') {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_TIMEZONE, $forum_user['id'], get_remote_address(), intval($_POST['timezone'], 10));
+					message($lang_fancy_stop_spam['Register bot timezone message']);
+				}
+			}
+
+			// CHECK SUBMIT VALUE
+			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') {
+				if ($_POST['register'] != $lang_profile['Register'].FANCY_STOP_SPAM_SUBMIT_MARK) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_SUBMIT, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Post bot message']);
+				}
+			}
+		]]></hook>
+		<!-- ============== REGISTER FORM PART END =============== -->
+
+
+		<!-- ============== LOGIN FORM PART =============== -->
+		<hook id="li_login_pre_header_load"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_login_form_honeypot'] == '1') {
+				$fancy_stop_spam_post_key_id = uniqid();
+				$forum_page['hidden_fields']['form_honey_key_id'] = '<input type="hidden" name="form_honey_key_id" value="'.$fancy_stop_spam_post_key_id.'" />';
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="li_login_pre_pass"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_login_form_honeypot'] == '1'):
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
+						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="li_login_form_submitted"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			// CHECK HONEY FIELDS
+			if ($forum_config['o_fancy_stop_spam_login_form_honeypot'] == '1') {
+				if (!isset($_POST['form_honey_key_id'])) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_LOGIN_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Login bot message']);
+				} else {
+					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
+					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
+						fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_LOGIN_HONEYPOT, $forum_user['id'], get_remote_address());
+						$errors[] = $lang_fancy_stop_spam['Login bot message'];
+					}
+				}
+			}
+		]]></hook>
+		<!-- ============== LOGIN FORM PART END =============== -->
+
+
+		<!-- ============== POST FORM PART =============== -->
+		<hook id="po_req_info_fieldset_end"><![CDATA[
+			$lang_post['Submit reply'] .= FANCY_STOP_SPAM_SUBMIT_MARK;
+			$lang_post['Submit topic'] .= FANCY_STOP_SPAM_SUBMIT_MARK;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="vt_quickpost_fieldset_end"><![CDATA[
+			$lang_common['Submit'] .= FANCY_STOP_SPAM_SUBMIT_MARK;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="po_pre_header_load,vt_quickpost_pre_display"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1') {
+				$fancy_stop_spam_post_key_id = uniqid();
+				$forum_page['hidden_fields']['form_honey_key_id'] = '<input type="hidden" name="form_honey_key_id" value="'.$fancy_stop_spam_post_key_id.'" />';
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="po_pre_post_contents"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1'):
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
+						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
+						<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="vt_quickpost_pre_fieldset_end"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1'):
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="sf-set set hidden">
+					<div class="sf-box text">
+						<label><span><?php echo $lang_fancy_stop_spam['Honey field'] ?></span>
+						<small><?php echo $lang_fancy_stop_spam['Honey field help'] ?></small></label><br/>
+						<span class="fld-input"><input type="text" name="email_confirm_xxx_<?php echo $fancy_stop_spam_post_key_id; ?>" size="35" autocomplete="off" /></span>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="po_form_submitted"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			// CHECK HONEY FIELDS
+			if ($forum_config['o_fancy_stop_spam_post_form_honeypot'] == '1' && !isset($_POST['preview'])) {
+				if (!isset($_POST['form_honey_key_id'])) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_POST_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Post bot message']);
+				} else {
+					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
+					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
+						fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_POST_HONEYPOT, $forum_user['id'], get_remote_address());
+						$errors[] = $lang_fancy_stop_spam['Post bot message'];
+					}
+				}
+			}
+
+			// CHECK SUBMIT VALUE
+			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1' && !isset($_POST['preview']) && $forum_user['is_guest']) {
+				if (($_POST['submit'] != $lang_post['Submit reply'].FANCY_STOP_SPAM_SUBMIT_MARK) || ($_POST['submit'] != $lang_post['Submit topic'].FANCY_STOP_SPAM_SUBMIT_MARK)) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_POST_SUBMIT, $forum_user['id'], get_remote_address());
+					message($lang_fancy_stop_spam['Post bot message']);
+				}
+			}
+		]]></hook>
+		<!-- ============== POST FORM PART END =============== -->
+
+
+		<!-- ============== CHECK SIGNATURE PART =============== -->
+		<hook id="pf_change_details_modify_main_menu"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1' && $forum_config['o_signatures'] == '1') {
+				if ((time() - $forum_user['registered']) < FANCY_STOP_SPAM_SIGNATURE_HIDE_TIME) {
+					// HIDE SIGNATURE LINK
+					if (isset($forum_page['main_menu']['signature'])) {
+						$forum_page['main_menu']['signature'] = '<li'.(($section == 'signature') ? ' class="active"' : ' class="hidden"').' style="display: none !important;"><a href="'.forum_link($forum_url['profile_signature'], $id).'"><span>'.$lang_profile['Section signature'].'</span></a></li>';
+					}
+				}
+			}
+		]]></hook>
+		<hook id="pf_change_details_signature_validation"><![CDATA[
+			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1') {
+				if ((time() - $forum_user['registered']) < FANCY_STOP_SPAM_SIGNATURE_HIDE_TIME) {
+					fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_SIGNATURE_HIDDEN, $forum_user['id'], get_remote_address());
+					fancy_stop_spam_inc_user_bot($forum_user['id']);
+				}
+			}
+		]]></hook>
+		<!-- ============== POST SIGNATURE PART END =============== -->
+
+
+		<!-- ============== CHECK IDENTICAL PART =============== -->
+		<hook id="es_essentials"><![CDATA[
+			// CONFIG
+			define('FANCY_STOP_SPAM_MESSAGE_MIN_LENGTH_FOR_IDENTICAL_CHECK', 24);
+			define('FANCY_STOP_SPAM_USER_MAX_POSTS_FOR_CHECK', 5);
+			define('FANCY_STOP_SPAM_USER_MIN_FORM_FILL_TIME', 3);
+			define('FANCY_STOP_SPAM_USER_IDENTICAL_POST_LIFETIME', 10800);
+			define('FANCY_STOP_SPAM_SIGNATURE_HIDE_TIME', 600);
+
+			define('FANCY_STOP_SPAM_SUBMIT_MARK', ' ');
+
+			// LOGS EVENTS REGISTER
+			define('FANCY_STOP_SPAM_LOG_REGISTER_SUBMIT', 1);
+			define('FANCY_STOP_SPAM_LOG_REGISTER_TIMEOUT', 2);
+			define('FANCY_STOP_SPAM_LOG_REGISTER_TIMEZONE', 3);
+			define('FANCY_STOP_SPAM_LOG_REGISTER_HONEYPOT', 4);
+			define('FANCY_STOP_SPAM_LOG_REGISTER_HONEYPOT_EMPTY', 5);
+
+			// LOGS EVENTS ACTIVATE
+			define('FANCY_STOP_SPAM_LOG_ACTIVATE_SUBMIT', 70);
+			define('FANCY_STOP_SPAM_LOG_ACTIVATE_HONEYPOT', 71);
+			define('FANCY_STOP_SPAM_LOG_ACTIVATE_HONEYPOT_EMPTY', 72);
+
+
+			// LOGS EVENTS POST
+			define('FANCY_STOP_SPAM_LOG_POST_SUBMIT', 20);
+			define('FANCY_STOP_SPAM_LOG_POST_TIMEOUT', 21);
+			define('FANCY_STOP_SPAM_LOG_POST_HONEYPOT', 22);
+			define('FANCY_STOP_SPAM_LOG_POST_HONEYPOT_EMPTY', 23);
+
+			// LOGS EVENTS LOGIN
+			define('FANCY_STOP_SPAM_LOG_LOGIN_HONEYPOT', 40);
+			define('FANCY_STOP_SPAM_LOG_LOGIN_HONEYPOT_EMPTY', 41);
+
+			// LOGS EVENTS SIGNATURE
+			define('FANCY_STOP_SPAM_LOG_SIGNATURE_HIDDEN', 60);
+
+
+			//
+ 			function fancy_stop_spam_log($activity_type, $user_id, $user_ip, $comment='') {
+				global $forum_db, $forum_config;
+
+				// LOGS enabled?
+				if ($forum_config['o_fancy_stop_spam_use_logs'] == '0') {
+					return TRUE;
+				}
+
+				$comment = utf8_substr($comment, 0, 200);
+
+				// CLEAR OLD ENTRIES
+				fancy_stop_spam_clear_old_logs();
+
+				$now = time();
+
+				$query = array(
+	    			'INSERT'	=> 'user_id, ip, activity_type, activity_time, comment',
+	    			'INTO'		=> 'fancy_stop_spam_logs',
+	    			'VALUES'	=> '\''.intval($user_id, 10).'\', INET_ATON(\''.$user_ip.'\'), \''.intval($activity_type, 10).'\', \''.$now.'\', \''.$forum_db->escape($comment).'\''
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		    }
+
+
+			// Clear old logs
+		    function fancy_stop_spam_clear_old_logs() {
+				global $forum_db;
+
+				if (fancy_stop_spam_get_num_logs() > 200) {
+					$max_old_id = fancy_stop_spam_get_last_old_id_logs();
+
+					if ($max_old_id > 0) {
+						// DEL OLDEST
+						$query = array(
+							'DELETE'	=> 'fancy_stop_spam_logs',
+							'WHERE'		=> 'id < '.$max_old_id
+						);
+						$forum_db->query_build($query) or error(__FILE__, __LINE__);
+					}
+				}
+		    }
+
+
+	     	//
+    		function fancy_stop_spam_get_num_logs() {
+				global $forum_db;
+
+				$query = array(
+	    			'SELECT'	=> 'COUNT(*) AS num',
+	    			'FROM'		=> 'fancy_stop_spam_logs',
+				);
+				$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+				return intval($forum_db->result($result), 10);
+    		}
+
+
+			//
+			function fancy_stop_spam_get_last_old_id_logs() {
+				global $forum_db;
+
+				$query = array(
+	    			'SELECT'	=> 'id',
+	    			'FROM'		=> 'fancy_stop_spam_logs',
+					'ORDER BY'	=> 'id DESC',
+					'LIMIT'		=> '200, 1'
+				);
+				$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+				return intval($forum_db->result($result), 10);
+    		}
+
+			//
+			function fancy_stop_spam_inc_user_bot($user_id) {
+				global $forum_db;
+
+				$user_id = intval($user_id, 10);
+
+				// Update the user table
+				if ($user_id > 0) {
+		    		$query = array(
+						'UPDATE'	=> 'users',
+						'SET'		=> 'fancy_stop_spam_bot=fancy_stop_spam_bot+1',
+						'WHERE'		=> 'id='.$user_id
+		    		);
+		    		$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		    	}
+			}
+
+			//
+			function fancy_stop_spam_add_identical_message($poster_id, $post_id, $message_hash, $posted) {
+				global $forum_db;
+
+				// REMOVE EXPIRED
+				fancy_stop_spam_prune_expired_identical();
+
+				// Add the post hash
+				$query = array(
+					'INSERT'	=> 'poster_id, post_id, post_hash, posted',
+					'INTO'		=> 'fancy_stop_spam_identical_posts',
+					'VALUES'	=> '\''.intval($poster_id, 10).'\', '.intval($post_id, 10).', \''.$forum_db->escape($message_hash).'\', '.$posted
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+			}
+
+			//
+			function fancy_stop_spam_prune_expired_identical() {
+				global $forum_db;
+
+				// REMOVE EXPIRED - 3 HOUR
+				$query = array(
+					'DELETE'	=> 'fancy_stop_spam_identical_posts',
+					'WHERE'		=> 'posted < '.(time() - FANCY_STOP_SPAM_USER_IDENTICAL_POST_LIFETIME)
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+			}
+
+			//
+			function fancy_stop_spam_check_is_identical_spam($poster_id, $message_hash) {
+				global $forum_db;
+				$is_spam = FALSE;
+
+				// REMOVE EXPIRED
+				fancy_stop_spam_prune_expired_identical();
+
+				$query = array(
+					'SELECT'	=> 'COUNT(f.id)',
+					'FROM'		=> 'fancy_stop_spam_identical_posts AS f',
+					'WHERE'		=> 'f.poster_id='.intval($poster_id).' AND post_hash=\''.$forum_db->escape($message_hash).'\''
+				);
+				$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+				$num_identical_messages = $forum_db->result($result, 0);
+
+				return (bool)/**/($num_identical_messages > 0);
+			}
+
+
+			//
+			function fancy_stop_spam_get_num_links_in_text($post_message) {
+				$num_links_http = $num_links_www = 0;
+
+				if (function_exists('mb_substr_count')) {
+					$num_links_http = mb_substr_count($post_message, 'http', 'UTF-8');
+					$num_links_www = mb_substr_count($post_message, 'www', 'UTF-8');
+				} else {
+					$num_links_http = substr_count($post_message, 'http');
+					$num_links_www = substr_count($post_message, 'www');
+				}
+
+				return max($num_links_http, $num_links_www);
+			}
+
+			//
+			function fancy_stop_spam_check_max_links($post_message) {
+				global $forum_user, $forum_config, $lang_fancy_stop_spam;
+
+				// Load LANG
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$return = TRUE;
+
+				$max_links = intval($forum_config['o_fancy_stop_spam_max_links'], 10);
+				if ($forum_user['is_guest']) {
+					$max_links = intval($forum_config['o_fancy_stop_spam_max_guest_links'], 10);
+				}
+
+				do {
+					if ($max_links < 0) {
+						break;
+					}
+
+					if ($forum_user['num_posts'] > FANCY_STOP_SPAM_USER_MAX_POSTS_FOR_CHECK) {
+						break;
+					}
+
+					if ($forum_user['is_admmod']) {
+						break;
+					}
+
+					if (fancy_stop_spam_get_num_links_in_text($post_message) > $max_links) {
+						$return = sprintf($lang_fancy_stop_spam['Error many links'], $max_links);
+					}
+				} while(FALSE);
+
+				return $return;
+			}
+
+			//
+			function fancy_stop_spam_debug_log($x, $m = null) {
+				if (!defined('FANCY_STOP_SPAM_DEBUG_LOG')) {
+					return;
+				}
+
+    			if (is_writable(FANCY_STOP_SPAM_DEBUG_LOG)) {
+					if (is_array($x)) {
+						ob_start();
+						print_r($x);
+						$x = $m.($m != null ? "\n" : '').ob_get_clean();
+					} else {
+						$x .= "\n";
+					}
+
+					error_log(strftime('%c').' '.$x . "\n", 3, FANCY_STOP_SPAM_DEBUG_LOG);
+    			}
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="fn_add_post_end,fn_add_topic_end"><![CDATA[
+			global $forum_user;
+
+			if ($forum_config['o_fancy_stop_spam_check_identical_posts'] == '1') {
+				if (!$forum_user['is_admmod'] && utf8_strlen($post_info['message']) > FANCY_STOP_SPAM_MESSAGE_MIN_LENGTH_FOR_IDENTICAL_CHECK && $forum_user['num_posts'] < FANCY_STOP_SPAM_USER_MAX_POSTS_FOR_CHECK) {
+					fancy_stop_spam_add_identical_message($post_info['poster_id'], $new_pid, sha1($post_info['message']), $post_info['posted']);
+				}
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="po_end_validation"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($forum_config['o_fancy_stop_spam_check_identical_posts'] == '1') {
+				if (!$forum_user['is_admmod'] && utf8_strlen($message) > FANCY_STOP_SPAM_MESSAGE_MIN_LENGTH_FOR_IDENTICAL_CHECK && $forum_user['num_posts'] < FANCY_STOP_SPAM_USER_MAX_POSTS_FOR_CHECK) {
+					if (fancy_stop_spam_check_is_identical_spam($forum_user['id'], sha1($message))) {
+						$errors[] = $lang_fancy_stop_spam['Post Identical message'];
+					}
+				}
+			}
+
+			$check_max_links_result = fancy_stop_spam_check_max_links($message);
+			if ($check_max_links_result !== TRUE) {
+				$errors[] = $check_max_links_result;
+			}
+
+
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="ed_end_validation"><![CDATA[
+			// Load LANG
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$check_max_links_result = fancy_stop_spam_check_max_links($message);
+			if ($check_max_links_result !== TRUE) {
+				$errors[] = $check_max_links_result;
+			}
+		]]></hook>
+	</hooks>
+</extension>
