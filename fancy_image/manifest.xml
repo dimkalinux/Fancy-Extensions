@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_image</id>
 	<title>Fancy Image</title>
-	<version>0.6.6</version>
+	<version>0.7.3</version>
 	<description>Show image from image hostings in fancybox</description>
 	<author>dimkalinux@gmail.com</author>
 
@@ -13,7 +13,7 @@
 	<maxtestedon>1.4RC1</maxtestedon>
 
 	<dependencies>
-		<dependency>fancy_jquery</dependency>
+		<dependency>fancy_jquery_addons</dependency>
 	</dependencies>
 
 

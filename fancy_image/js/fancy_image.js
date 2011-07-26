@@ -20,13 +20,18 @@ PUNBB.fancy_image = (function () {
 				$image_link = $image.parents('a').eq(0),
 				group_id = $image.parents('.post').find('h4').attr('id');
 
-
 			if (!$image_link) {
 				return;
 			}
 
 			if (image_preview_url) {
-				$image_link.attr('href', image_preview_url).attr('rel', group_id).addClass('fancy_zoom');
+				$image_link.attr('href', image_preview_url);
+
+				if (group_id) {
+					$image_link.attr('rel', group_id);
+				}
+
+				$image_link.addClass('fancy_zoom');
 				$image.removeAttr('rel');
 			}
 
