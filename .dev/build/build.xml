@@ -9,7 +9,7 @@
 	<!-- SOURCE DIRS -->
 	<property name="src-root" value="${basedir}/../../" />
 
-	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image">
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons">
 		<echo>Build done.</echo>
 	</target>
 
@@ -73,5 +73,35 @@
 				<file name="fancy_image.js" />
 			</filelist>
 		</compress-js-lib>
+	</target>
+
+
+	<!-- FANCY JQUERY ADDONS -->
+	<target name="fancy_jquery_addons">
+		<compress-js-lib tofile="${src-root}/fancy_jquery_addons/js/fancy_jquery_addons.min.js" force="true">
+			<filelist dir="${src-root}/fancy_jquery_addons/js/">
+				<file name="jquery.cookie.js" />
+				<file name="jquery.easing.js" />
+				<file name="jquery.fancybox-1.3.4.js" />
+				<file name="jquery.hotkeys.js" />
+				<file name="jquery.mousewheel.js" />
+				<file name="jquery.sha1.js" />
+				<file name="jquery.timers-1.2.js" />
+				<file name="jquery.tools.min.js" />
+				<file name="underscore.js" />
+			</filelist>
+		</compress-js-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_jquery_addons/css/Oxygen/fancy_jquery_addons.min.css" force="true">
+			<filelist dir="${src-root}/fancy_jquery_addons/css/Oxygen/">
+				<file name="jquery.fancybox-1.3.4.css" />
+			</filelist>
+		</compress-css-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_jquery_addons/css/dark_Oxygen/fancy_jquery_addons.min.css" force="true">
+			<filelist dir="${src-root}/fancy_jquery_addons/css/dark_Oxygen/">
+				<file name="jquery.fancybox-1.3.4.css" />
+			</filelist>
+		</compress-css-lib>
 	</target>
 </project>
