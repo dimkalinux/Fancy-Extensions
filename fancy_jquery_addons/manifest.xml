@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_jquery_addons</id>
+	<title>Fancy jQuery Addons</title>
+	<version>2.0.2</version>
+	<description>Provide many addons library for pun_jquery</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+	<dependencies>
+		<dependency>pun_jquery</dependency>
+	</dependencies>
+
+	<hooks>
+		<hook id="hd_head"><![CDATA[
+			if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_jquery_addons.min.css')) {
+				$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_jquery_addons.min.css', array('type' => 'url', 'media' => 'screen'));
+			} else {
+				$forum_loader->add_css($ext_info['url'].'/css/Oxygen/fancy_jquery_addons.min.css', array('type' => 'url', 'media' => 'screen'));
+			}
+		]]></hook>
+
+		<hook id="ft_js_include" priority="4"><![CDATA[
+			$forum_loader->add_js($ext_info['url'].'/js/fancy_jquery_addons.min.js', array('type' => 'url', 'async' => false, 'weight' => 77));
+		]]></hook>
+	</hooks>
+</extension>
