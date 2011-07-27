@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_merge_posts</id>
+	<title>Fancy Merge Posts</title>
+	<version>0.6</version>
+	<description>Automaticaly merge posts from one author</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+
+
+	<install><![CDATA[
+		$forum_db->add_field('groups', 'g_merge_posts', 'bool', false, 0);
+
+		forum_config_add('o_fancy_merge_posts_silent', '1');
+		forum_config_add('o_fancy_merge_posts_dm_interval', '0');
+		forum_config_add('o_fancy_merge_posts_no_update_date', '0');
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_field('groups', 'g_merge_posts');
+
+		forum_config_remove(array(
+			'o_fancy_merge_posts_silent',
+			'o_fancy_merge_posts_dm_interval',
+			'o_fancy_merge_posts_no_update_date'));
+	]]></uninstall>
+
+
+	<hooks>
+		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
+			if (!isset($fancy_merge_posts)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($ext['id'] == 'fancy_merge_posts' && !isset($forum_page['ext_actions']['fancy_merge_posts_settings'])) {
+				$forum_page['ext_actions']['fancy_merge_posts_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$fancy_merge_posts['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			if (!isset($fancy_merge_posts)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$forum_page['group_count'] = 0;
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $fancy_merge_posts['Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_merge_posts_silent]" value="1"<?php if ($forum_config['o_fancy_merge_posts_silent'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $fancy_merge_posts['Silent mode desc'] ?></label>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box checkbox">
+							<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_merge_posts_no_update_date]" value="1"<?php if ($forum_config['o_fancy_merge_posts_no_update_date'] == '1') echo ' checked="checked"' ?> /></span>
+							<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $fancy_merge_posts['No update date desc'] ?></label>
+						</div>
+					</div>
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $fancy_merge_posts['Dont merge timeout'] ?></span><small><?php echo $fancy_merge_posts['Dont merge timeout hint'] ?></small></label><br />
+							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_merge_posts_dm_interval]" size="6" maxlength="6" value="<?php echo forum_htmlencode($forum_config['o_fancy_merge_posts_dm_interval']) ?>" /></span>
+						</div>
+					</div>
+				</fieldset>
+
+
+<?php
+		]]></hook>
+
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_merge_posts_silent'] = (!isset($form['fancy_merge_posts_silent']) || intval($form['fancy_merge_posts_silent'], 10) <= 0) ? '0' : '1';
+			$form['fancy_merge_posts_no_update_date'] = (!isset($form['fancy_merge_posts_no_update_date']) || intval($form['fancy_merge_posts_no_update_date'], 10) <= 0) ? '0' : '1';
+			$form['fancy_merge_posts_dm_interval'] = intval($form['fancy_merge_posts_dm_interval'], 10);
+		]]></hook>
+
+
+		<hook id="agr_add_edit_group_pre_allow_send_email_checkbox"><![CDATA[
+			if ($group['g_id'] != FORUM_GUEST):
+				if (!isset($fancy_merge_posts)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			?>
+				<div class="mf-item">
+					<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="merge_posts" value="1"<?php if ($group['g_merge_posts'] == '1') echo ' checked="checked"' ?> /></span>
+					<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $fancy_merge_posts['Allow dont merge'] ?></label>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+		<hook id="agr_add_edit_end_validation"><![CDATA[
+			$merge_posts = (isset($_POST['merge_posts']) && $_POST['merge_posts'] == '1') || $is_admin_group ? '1' : '0';
+		]]></hook>
+
+
+		<hook id="agr_add_end_qr_add_group"><![CDATA[
+			$query['INSERT'] .= ', g_merge_posts';
+			$query['VALUES'] .= ', '.$merge_posts;
+		]]></hook>
+
+
+		<hook id="agr_edit_end_qr_update_group"><![CDATA[
+			$query['SET'] .= ', g_merge_posts='.$merge_posts;
+		]]></hook>
+
+
+		<hook id="po_qr_get_topic_forum_info"><![CDATA[
+			$query['SELECT'] .= ', p.id AS post_id, p.poster_id, p.message, p.posted, p.edited';
+			$query['JOINS'][] = array(
+                'LEFT JOIN' => 'posts AS p',
+                'ON'        => 't.last_post_id=p.id AND p.poster_id='.$forum_user['id']
+            );
+		]]></hook>
+
+
+		<hook id="po_pre_add_post"><![CDATA[
+			$post_info['fancy_merge_posts_dont_merge'] = isset($_POST['dont_merge']);
+			$post_info['fancy_merge_posts_prev_post'] = $cur_posting;
+
+			if (!isset($fancy_merge_posts)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+		]]></hook>
+
+
+		<hook id="fn_add_post_start" priority="8"><![CDATA[
+			global $fancy_merge_posts, $forum_page, $forum_user;
+
+			// CUR_POSTING
+			$fancy_merge_posts_prev_post = $post_info['fancy_merge_posts_prev_post'];
+
+			// DEFAULT - MERGE
+			// SET IT IN YOUR EXT to TRUE if NOT NEED MERGE
+			$fancy_merge_posts_no_merge = FALSE;
+
+
+			// BREAK DISABLE MERGING
+			do {
+				($hook = get_hook('fancy_merge_posts_check_merge')) ? eval($hook) : null;
+
+				// DONT MERGE IF HOOK SET IT TRUE
+				if ($fancy_merge_posts_no_merge) {
+					break;
+				}
+
+				// DONT MERGE IF GUEST
+				if ($forum_user['is_guest'] || is_null($fancy_merge_posts_prev_post['poster_id']) || is_null($fancy_merge_posts_prev_post['message'])) {
+					break;
+				}
+
+				//
+				if (($forum_page['is_admmod'] || (isset($forum_user['g_merge_posts']) && intval($forum_user['g_merge_posts'], 10) === 1)) && $post_info['fancy_merge_posts_dont_merge']) {
+					break;
+				}
+
+				// DONT MERGE IF ENABLED IMAGES
+				if (isset($post_info['have_image']) && ($post_info['have_image'])) {
+					break;
+				}
+
+				// DONT MERGE BIG MESSAGE
+				if ((utf8_strlen($post_info['message']) + utf8_strlen($fancy_merge_posts_prev_post['message'])) > FORUM_MAX_POSTSIZE_BYTES) {
+					break;
+				}
+
+				// DONT MERGE IF HAVE ATTACHMENTS pun_attachment
+				if (isset($uploaded_list) && is_array($uploaded_list) && (count($uploaded_list) > 0)) {
+					break;
+				}
+
+				// DONT MERGE IF TIMEOUT
+				$fancyDontMergeTimeout = intval($forum_config['o_fancy_merge_posts_dm_interval'], 10);
+				if (($fancyDontMergeTimeout > 0) && ($fancyDontMergeTimeout * 60) < (time() - $fancy_merge_posts_prev_post['posted'])) {
+					break;
+				}
+
+				// SILENT?
+				if (intval($forum_config['o_fancy_merge_posts_silent'], 10) === 1) {
+					$mrgMsg = $forum_db->escape($fancy_merge_posts_prev_post['message']."\n\n".$post_info['message']."\n");
+					$mrgEdited = ', edited='.$post_info['posted'];
+				} else {
+					$mrgMsg = $forum_db->escape($fancy_merge_posts_prev_post['message']."\n[merge_posts_bbcode]".sprintf($fancy_merge_posts['Added'], format_time(time(), 0, null, null, TRUE))."[/merge_posts_bbcode]\n\n".$post_info['message']."\n");
+					$mrgEdited = '';
+				}
+
+				// UPDATE POST DATE?
+				if ($forum_config['o_fancy_merge_posts_no_update_date'] == '1') {
+					$mrgPostDate = '';
+				} else {
+					$mrgPostDate = ', posted='.$post_info['posted'];
+				}
+
+				// UPDATE MESSAGE IN DB
+				$query = array(
+					'UPDATE'    => 'posts',
+					'SET'     	=> 'message=\''.$mrgMsg.'\''.$mrgEdited.$mrgPostDate,
+					'WHERE'    	=> 'id='.$fancy_merge_posts_prev_post['post_id']
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+				// UPDATE TOPIC
+				$query = array(
+					'UPDATE'	=> 'topics',
+					'SET'		=> 'last_post='.$post_info['posted'].', last_post_id='.$fancy_merge_posts_prev_post['post_id'].', last_poster=\''.$forum_db->escape($post_info['poster']).'\'',
+					'WHERE'		=> 'id='.$post_info['topic_id']
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+				// SYNC FORUM
+				sync_forum($post_info['forum_id']);
+
+				if (!defined('FORUM_SEARCH_IDX_FUNCTIONS_LOADED')) {
+					require FORUM_ROOT.'include/search_idx.php';
+				}
+
+				update_search_index('edit', $fancy_merge_posts_prev_post['post_id'], $mrgMsg);
+
+				$query = array(
+					'UPDATE'    => 'users',
+					'SET'       => 'last_post='.$post_info['posted'],
+					'WHERE'   	=> 'id='.$forum_user['id']
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+				if (!$forum_user['is_guest']) {
+					$tracked_topics = get_tracked_topics();
+					$tracked_topics['topics'][$post_info['topic_id']] = time();
+					set_tracked_topics($tracked_topics);
+				}
+
+				// NEW IS PREV PID
+				$new_pid = $fancy_merge_posts_prev_post['post_id'];
+
+				($hook = get_hook('fancy_merge_posts_pre_return')) ? eval($hook) : null;
+
+				return TRUE;
+			} while(0);
+		]]></hook>
+
+
+		<hook id="po_pre_optional_fieldset"><![CDATA[
+			if ($tid != 0) {
+				if ($forum_page['is_admmod'] || (isset($forum_user['g_merge_posts']) && intval($forum_user['g_merge_posts'], 10) === 1)) {
+					if (!isset($fancy_merge_posts)) {
+						if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+							require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+						} else {
+							require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+						}
+					}
+
+					// Set default status
+					if ((isset($_POST['dont_merge'])) || ($forum_user['is_admmod'])) {
+						$merge_check_status = ' checked="checked"';
+					} else {
+						$merge_check_status = ' ';
+					}
+
+					$forum_page['checkboxes']['dont_merge'] = '<div class="mf-item"><span class="fld-input"><input type="checkbox" id="fld'.(++$forum_page['fld_count']).'" name="dont_merge" value="1"'.$merge_check_status.' /></span> <label for="fld'.$forum_page['fld_count'].'">'.$fancy_merge_posts['Dont Merge'].'</label></div>';
+				}
+			}
+		]]></hook>
+
+
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			$pattern[] = '#\[merge_posts_bbcode\](.*?)\[/merge_posts_bbcode\]#s';
+			$replace[] = '</p><p class="lastedit merged"><em>$1</em></p><p>';
+		]]></hook>
+
+
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags_block[] = 'merge_posts_bbcode';
+		]]></hook>
+
+
+		<hook id="ps_preparse_bbcode_start"><![CDATA[
+			$tags[] = 'merge_posts_bbcode';
+			$tags_opened[] = 'merge_posts_bbcode';
+			$tags_closed[] = 'merge_posts_bbcode';
+			$tags_fix[] = 'merge_posts_bbcode';
+		]]></hook>
+	</hooks>
+</extension>
