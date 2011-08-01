@@ -1,6 +1,6 @@
 * eol=lf
 *.jar binary
 *.zip binary
-*.gif
-*.png
+*.gif binary
+*.png binary
 
