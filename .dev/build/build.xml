@@ -9,7 +9,7 @@
 	<!-- SOURCE DIRS -->
 	<property name="src-root" value="${basedir}/../../" />
 
-	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker">
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker, fancy_spellcheck">
 		<echo>Build done.</echo>
 	</target>
 
@@ -123,6 +123,29 @@
 		<compress-css-lib tofile="${src-root}/fancy_tracker/css/dark_Oxygen/fancy_tracker.min.css" force="true">
 			<filelist dir="${src-root}/fancy_tracker/css/dark_Oxygen/">
 				<file name="fancy_tracker.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+
+
+	<!-- FANCY SPELLCHECK -->
+	<target name="fancy_spellcheck">
+		<compress-js-lib tofile="${src-root}/fancy_spellcheck/js/fancy_spellcheck.min.js" force="true">
+			<filelist dir="${src-root}/fancy_spellcheck/js/">
+				<file name="fancy_spellcheck.js" />
+				<file name="fancy_spellcheck_storage_local.js" />
+			</filelist>
+		</compress-js-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_spellcheck/css/Oxygen/fancy_spellcheck.min.css" force="true">
+			<filelist dir="${src-root}/fancy_spellcheck/css/Oxygen/">
+				<file name="fancy_spellcheck.css" />
+			</filelist>
+		</compress-css-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_spellcheck/css/dark_Oxygen/fancy_spellcheck.min.css" force="true">
+			<filelist dir="${src-root}/fancy_spellcheck/css/dark_Oxygen/">
+				<file name="fancy_spellcheck.css" />
 			</filelist>
 		</compress-css-lib>
 	</target>
