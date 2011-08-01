@@ -7,7 +7,7 @@
 	<title>Fancy AddThis</title>
 	<description>A PunBB extension that added AddThis widget</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.4.2</version>
+	<version>0.5</version>
 
 
 	<!-- -->
@@ -30,7 +30,11 @@
 			}
 
 			// CSS for disabled JS hide bar
-			$forum_loader->add_css('.fancy-addthis-post { display: none; }', array('type' => 'inline', 'noscript' => true));
+			$forum_loader->add_css('#fancy_addthis_topic_toolbox, .fancy-addthis-post { display: none; }', array('type' => 'inline', 'noscript' => true));
+			$forum_loader->add_css('
+				#fancy_addthis_topic_toolbox { min-height: 30px; margin: .75em 0 0; }
+				#fancy_addthis_topic_toolbox table { float: right; width: auto; }
+				#fancy_addthis_topic_toolbox td { border: none; padding: .2em; }', array('type' => 'inline'));
 
 			$forum_loader->add_js('//s7.addthis.com/js/250/addthis_widget.js#domready=1', array('weight' => 150));
 
@@ -49,6 +53,24 @@
 		<!-- -->
 		<hook id="vt_row_pre_post_actions_merge" priority="7"><![CDATA[
 			$forum_page['post_actions']['fancy_addthis_code'] = '<span class="visual-hidden fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'"><span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.$lang_fancy_addthis['Share'].'</span></span>';
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="vt_row_pre_display" priority="7"><![CDATA[
+			if ($cur_post['id'] == $cur_topic['first_post_id']) {
+				$forum_page['message']['fancy_addthis_topic_block'] = '
+					<div id="fancy_addthis_topic_toolbox">
+						<table cellspacing="0" cellpadding="0" class="addthis_toolbox addthis_default_style" addthis:url="'.forum_link($forum_url['topic'], array($id, sef_friendly($cur_topic['subject']))).'" addthis:title="'.forum_htmlencode($cur_topic['subject']).'">
+						<tbody>
+							<tr valign="top">
+								<td><a class="addthis_button_google_plusone" g:plusone:size="medium" style="width:75px;position:relative;display:inline-block;"/></td>
+								<td><a class="addthis_button_tweet" style="cursor:pointer;width:100px;display:inline-block"></a></td>
+							</tr>
+						</tbody>
+						</table>
+					</div>';
+			}
 		]]></hook>
 	</hooks>
 </extension>
