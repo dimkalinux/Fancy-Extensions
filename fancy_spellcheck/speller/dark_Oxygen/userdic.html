@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+	<style type="text/css">
+		html, body { height: 100%; width: 100%; margin: 0; }
+
+		body {
+			text-align: left;
+			padding: 0px;
+			color: #e0e0e0;
+			background: #2f2f2f;
+			font: 13px/1.331 arial,helvetica,clean,sans-serif;
+			*font-size:small; /* for IE */
+			*font:x-small; /* for IE in quirks mode */
+		}
+
+
+		form { height: 100%; width: 100%; margin: 0; }
+
+		#header {
+			background: #C3D9FF;
+		}
+
+		#wrap {
+			padding: 1em 1em .5em 1em;
+		}
+
+		textarea {
+			border: 1px solid #565656;
+			-moz-border-radius: 4px;
+			-webkit-border-radius: 4px;
+			border-radius: 4px;
+			padding: 3px;
+			color: #DDDDDD;
+			background: #404040;
+			font-size: 1.05em;
+		}
+		.nrow {
+			margin: .2em 0 .1em;
+			padding: .9em 0 .8em;
+			border-top: solid 1px #4B4B4B;
+		}
+		button {
+			background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEoAAAAhCAYAAAB+4z3oAAAAdElEQVRo3u3WsQnAMAwEwMSk8ljen0wjXLiwM0JUxQTuRzhej87W2n3Ia65aK4VECoJko9ZaFEA5ve8bNeek4PRA2SgbpVE2SjQKFKjtG9V7p5CBGmNQcHoeTlCg/g5VipkCBcp7oFGgQAkoUKD2Q0UEhUQed4Eo13QxDP0AAAAASUVORK5CYII=") repeat-x scroll 50% 50% #3A3A3A !important;
+			border: solid 1px #666;
+			color: #ccc;
+			padding: 0.2em;
+		}
+
+		button:hover {
+			color: #eee !important;
+			border: solid 1px #ccc !important;
+			background: #3A3A3A !important;
+			outline: 0;
+			background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAGQCAYAAAEYXzpNAAAAeklEQVQ4je3RMQ6CQBSE4Z/ZB4uLUUOgsbXRw3IYb6OJrRWxWRJbrbiBYUnW5mtnJsN5uH4EkILbGNGp3aLjLiwcTtLlz/hGl36PvLmslifl8ZpQ19SoDx4dNtUaWi1Axp/ny32MyJtQKA011UwoDdXmkFOxhqZ/fsQXA+QZTeH0D84AAAAASUVORK5CYII=) !important;
+		}
+	</style>
+	<title>Словарь пользователя</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<script type="text/javascript" src="../../../js/spellchecker_yandex.min.js"></script>
+</head>
+<body onload="new UserDicDialog().init()">
+	<div style="display:none">
+		<p id="saveDic">Сохранить изменения в словаре пользователя?</p>
+	</div>
+  <form id="form" action="">
+
+	<table cellpadding="0" cellspacing="0" style="height:100%;width:100%;">
+	<tr>
+		<td><textarea name="dic" rows="10" cols="20" style="width:100%;height:100%;margin:0;padding:1px;overflow:auto;"></textarea></td>
+	</tr>
+	<tr align="left" style="height:3em;">
+		<td><div class="nrow"><button type="button" name="ok" class="button">Закрыть</button></div></td>
+	</tr>
+	</table>
+	</form>
+</body>
+</html>

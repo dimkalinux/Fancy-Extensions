@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		html, body { height: 100%; width: 100%; margin: 0; }
+
+		body {
+			text-align: left;
+			padding: 0px;
+			color: #e0e0e0;
+			background: #2f2f2f;
+			font: 13px/1.331 arial,helvetica,clean,sans-serif;
+			*font-size:small; /* for IE */
+			*font:x-small; /* for IE in quirks mode */
+		}
+
+		#header {
+			color: #e0e0e0;
+			background: #262626;
+		}
+
+		#wrap {
+			padding: 1em 1em .5em 1em;
+		}
+
+		h1 {
+			font-size: 1.5em;
+			font-weight: normal;
+			padding: .5em .8em;
+			margin: 0;
+		}
+
+		input[type=text],
+		textarea {
+			width: 26.6em !important;
+			border: 1px solid #565656;
+			-moz-border-radius: 4px;
+			-webkit-border-radius: 4px;
+			border-radius: 4px;
+			padding: 3px;
+			color: #DDDDDD;
+			background: #404040;
+		}
+
+		.row {
+			margin: .7em 0 .2em;
+		}
+
+		.nrow {
+			margin: .2em 0 .1em;
+			padding: .9em 0 .8em;
+			border-top: solid 1px #4B4B4B;
+		}
+
+		#reason {
+			margin: 0 0 .3em 0;
+		}
+
+		label.lh {
+			font-weight: bold;
+			display: block;
+			margin-bottom: .2em;
+		}
+
+		button {
+			background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEoAAAAhCAYAAAB+4z3oAAAAdElEQVRo3u3WsQnAMAwEwMSk8ljen0wjXLiwM0JUxQTuRzhej87W2n3Ia65aK4VECoJko9ZaFEA5ve8bNeek4PRA2SgbpVE2SjQKFKjtG9V7p5CBGmNQcHoeTlCg/g5VipkCBcp7oFGgQAkoUKD2Q0UEhUQed4Eo13QxDP0AAAAASUVORK5CYII=") repeat-x scroll 50% 50% #3A3A3A !important;
+			border: solid 1px #666;
+			color: #ccc;
+			padding: 0.2em;
+		}
+
+		button:hover {
+			color: #eee !important;
+			border: solid 1px #ccc !important;
+			background: #3A3A3A !important;
+			outline: 0;
+			background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAGQCAYAAAEYXzpNAAAAeklEQVQ4je3RMQ6CQBSE4Z/ZB4uLUUOgsbXRw3IYb6OJrRWxWRJbrbiBYUnW5mtnJsN5uH4EkILbGNGp3aLjLiwcTtLlz/hGl36PvLmslifl8ZpQ19SoDx4dNtUaWi1Axp/ny32MyJtQKA011UwoDdXmkFOxhqZ/fsQXA+QZTeH0D84AAAAASUVORK5CYII=) !important;
+		}
+	</style>
+
+	<title>Параметры правописания</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<script type="text/javascript" src="../../../js/spellchecker_yandex.min.js"></script>
+</head>
+<body onload="new SpellOptDialog().init()">
+	<div id="header">
+		<h1>Параметры правописания</h1>
+	</div>
+
+	<div id="wrap">
+	  <form id="form" action="">
+
+	    <div style="margin-bottom: 0.7em;">
+			<label class="lh">Параметры</label>
+			<ul style="list-style-type:none;padding-left:15px;margin:0px;">
+				<li><input type="checkbox" id="ignoreUppercase"/> <label for="ignoreUppercase">Пропускать слова из ПРОПИСНЫХ букв</label></li>
+				<li><input type="checkbox" id="ignoreDigits"/> <label for="ignoreDigits">Пропускать слова с цифрами</label></li>
+				<li><input type="checkbox" id="ignoreUrls"/> <label for="ignoreUrls">Пропускать URL'и и имена файлов</label></li>
+				<li><input type="checkbox" id="findRepeat"/> <label for="findRepeat">Подсвечивать повторяющиеся слова</label></li>
+			</ul>
+	    </div>
+
+	    <div class="nrow">
+			<label class="lh" for="langList">Язык словаря</label>
+			<div style="padding-left:18px;">
+			<select name="langList" id="langList" style="width:160px;">
+				<option value="ru">Русский</option>
+				<option value="uk">Украинский</option>
+				<option value="en">Английский</option>
+			</select>
+			<button type="button" name="userDic">Редактировать</button>
+			</div>
+	    </div>
+
+	    <div id="groupLatin" class="nrow">
+	    <label class="lh">Слова, написанные латиницей</label>
+	      <ul style="list-style-type:none;padding-left:15px;margin:0px;">
+	        <li><input type="radio" id="ignoreLatin" name="latin" value="ignore"/> <label for="ignoreLatin">Пропускать</label></li>
+	        <li><input type="radio" id="flagLatin" name="latin" value="flag"/> <label for="flagLatin">Подсвечивать</label></li>
+	        <li>
+	          <div style="position:relative;">
+	          <input type="radio" id="checkLatin" name="latin" value="check"/> <label for="checkLatin">Проверять</label>
+	          <span style="position:absolute;right:0px;"><select name="latinLang" style="width:160px;">
+	            <option value="en" selected="selected">Английский</option>
+	          </select></span>
+	          </div>
+	        </li>
+	      </ul>
+	    </div>
+
+	    <div class="nrow">
+	      <span>
+	        <input type="checkbox" id="recheck"/>
+	        <label for="recheck" id="labelRecheck">Проверить с начала</label>
+	      </span>
+	    </div>
+
+	    <div class="nrow">
+			<input type="button" name="ok" class="button" value="OK"/>
+	        <input type="button" name="cancel" class="button" value="Отмена"/>
+		</div>
+
+	  </form>
+	</div>
+</body>
+</html>

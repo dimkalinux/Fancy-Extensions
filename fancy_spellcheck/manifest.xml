@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_spellcheck</id>
+	<title>Fancy Spell Checker</title>
+	<version>0.4.6</version>
+	<description>Provide yandex spellcheck in post form</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC1</maxtestedon>
+
+	<dependencies>
+		<dependency>fancy_jquery_addons</dependency>
+	</dependencies>
+
+	<hooks>
+		<hook id="hd_head"><![CDATA[
+			if (defined('FORUM_PAGE') && (in_array(FORUM_PAGE, array('viewtopic','post','postedit','profile-signature')))) {
+				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_spellcheck.min.css')) {
+					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_spellcheck.min.css');
+				} else {
+					$forum_loader->add_css($ext_info['url'].'/css/Oxygen/fancy_spellcheck.min.css');
+				}
+
+
+				$forum_loader->add_css('#fancy_spellcheck_block { display: none; }', array('type' => 'inline', 'noscript' => true));
+
+				// LOAD JS
+				$fancy_spellcheck_js_code = '
+					PUNBB.env.fancy_spellcheck = {
+						speller_url: "'.$ext_info['url'].'/speller/'.$forum_user['style'].'/",
+						user_lang: "'.$forum_user['language'].'",
+					};';
+
+				$forum_loader->add_js($fancy_spellcheck_js_code, array('type' => 'inline'));
+				$forum_loader->add_js($ext_info['url'].'/js/fancy_spellcheck.min.js', array('type' => 'url', 'async' => true));
+			}
+		]]></hook>
+
+		<hook id="vt_quickpost_pre_fieldset_end,po_pre_optional_fieldset,ed_pre_checkbox_display,pf_change_details_signature_pre_fieldset_end" priority="7"><![CDATA[
+			?>
+				<div id="fancy_spellcheck_block"><span id="fancy_spellcheck_span"><span id="fancy_spellcheck_link">Проверить орфографию</span></span><span id="fancy_check_spelling_ok">ok</span></div>
+			<?php
+		]]></hook>
+	</hooks>
+</extension>

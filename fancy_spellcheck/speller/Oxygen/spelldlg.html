@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		html, body { height: 100%; width: 100%; margin: 0; }
+
+		body {
+			text-align: left;
+			padding: 0px;
+			color: #000;
+			background: #fff;
+			font: 13px/1.331 arial,helvetica,clean,sans-serif;
+			*font-size:small; /* for IE */
+			*font:x-small; /* for IE in quirks mode */
+		}
+
+		#header {
+			background: #C3D9FF;
+		}
+
+		#wrap {
+			padding: 1em 1em .5em 1em;
+		}
+
+		h1 {
+			font-size: 1.5em;
+			font-weight: normal;
+			padding: .5em .8em;
+			margin: 0;
+		}
+
+		input[type=text],
+		textarea {
+			width: 26.6em !important;
+			border: solid 1px #DFE6ED;
+			-moz-border-radius: 4px;
+			-webkit-border-radius: 4px;
+			border-radius: 4px;
+			padding: 3px;
+		}
+
+
+		#fragment {
+			margin: .7em 0 .5em;
+			border: solid 1px #DFE6ED;
+			padding: .8em;
+			max-width: 35em;
+		}
+
+		select[name=suggest] {
+			width: 27em;
+		}
+
+		.row {
+			margin: .7em 0 .2em;
+		}
+
+		.nrow {
+			margin: .2em 0 .1em;
+			padding: .9em 0 .8em;
+			border-top: solid 1px #DFE6ED;
+		}
+
+		#reason {
+			margin: 0 0 .3em 0;
+		}
+
+		label.lh {
+			font-weight: bold;
+			display: block;
+			margin-bottom: .2em;
+		}
+	</style>
+	<title>Правописание</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<script type="text/javascript" src="../../../js/spellchecker_yandex.min.js"></script>
+</head>
+<body onload="new SpellDialog().init()">
+
+	<div style="display:none">
+		<p id="checkComplete">Проверка правописания завершена.</p>
+		<p id="wordNotFound">Слово &quot;{0}&quot; не найдено в словаре. Вы хотите его использовать?</p>
+		<p id="timeoutError">Не удалось выполнить запрос. Время ожидания истекло.</p>
+		<p id="changeError">Не удалось заменить слово.</p>
+		<p id="spellErrors">Ошибка:Нет в словаре:Повтор слова:Ошибка капитализации</p>
+	</div>
+
+	<div id="header">
+		<h1>Правописание</h1>
+	</div>
+	<div id="wrap">
+		<form id="form" action="">
+			<div id="reason"></div>
+
+			<input name="word" type="text" maxlength="100"/>
+			<div class="row">
+				<button type="button" name="ignoreOnce" class="lbutton">Пропустить</button>
+				<button type="button" name="ignoreAll" class="lbutton">Пропустить&nbsp;все</button>&#160;
+				<button type="button" name="addToDic" class="lbutton" style="visibility:hidden">Добавить&nbsp;в&nbsp;словарь</button>
+			</div>
+
+			<div id="fragment" class="fragment"></div>
+
+			<label class="lh">Варианты</label></td>
+			<select name="suggest" size="5"><option>(варианты отсутствуют)</option></select><br>
+			<div class="row">
+				<button type="button" name="change" class="lbutton" style="margin-bottom: 3px">Заменить</button>
+				<button type="button" name="changeAll" class="lbutton" style="margin-bottom: 3px">Заменить все</button>
+			</div>
+
+			<div class="nrow">
+				<label class="lh">Язык словаря</label>
+				<select name="langList">
+					<option value="ru">Русский</option>
+					<option value="uk">Украинский</option>
+					<option value="en">Английский</option>
+				</select>
+
+				<button type="button" name="options" class="button">Параметры...</button>
+				<button type="button" name="undo" class="button">Вернуть</button>
+			</div>
+
+			<div class="nrow">
+				<button type="button" name="cancel" class="lbutton">Закрыть</button>
+			</div>
+
+	  </form>
+	</div>
+</body>
+</html>
