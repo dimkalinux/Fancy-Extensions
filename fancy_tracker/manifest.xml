@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_tracker</id>
 	<title>Fancy Bittorrent Tracker</title>
-	<version>0.9.25</version>
+	<version>0.9.26</version>
 	<description>Simple Bittorrent tracker.</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC1</maxtestedon>
+	<maxtestedon>1.4RC2</maxtestedon>
 
 	<dependencies>
 		<dependency>pun_jquery</dependency>

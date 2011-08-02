@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>last_topic_title_on_forum_index</id>
 	<title>Last Topic Title</title>
-	<version>0.6.1</version>
+	<version>0.6.2</version>
 	<description>Show last posts title on index page</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC1</maxtestedon>
+	<maxtestedon>1.4RC2</maxtestedon>
 
 	<install><![CDATA[
 		$forum_db->drop_index('forums', 'i_last_post_subject', false);

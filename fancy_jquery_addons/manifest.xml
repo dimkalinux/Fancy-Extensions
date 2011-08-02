@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>fancy_jquery_addons</id>
 	<title>Fancy jQuery Addons</title>
-	<version>2.0.4</version>
+	<version>2.0.5</version>
 	<description>Provide many addons library for pun_jquery</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC1</maxtestedon>
+	<maxtestedon>1.4RC2</maxtestedon>
 
 	<dependencies>
 		<dependency>pun_jquery</dependency>

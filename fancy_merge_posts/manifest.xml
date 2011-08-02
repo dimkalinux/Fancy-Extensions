@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_merge_posts</id>
 	<title>Fancy Merge Posts</title>
-	<version>0.6</version>
+	<version>0.6.1</version>
 	<description>Automaticaly merge posts from one author</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC1</maxtestedon>
+	<maxtestedon>1.4RC2</maxtestedon>
 
 
 

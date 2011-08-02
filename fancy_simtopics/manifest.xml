@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_simtopics</id>
 	<title>Fancy Similar Topics</title>
-	<version>0.7</version>
+	<version>0.7.1</version>
 	<description>Show similar topics</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC1</maxtestedon>
+	<maxtestedon>1.4RC2</maxtestedon>
 
 	<note type="install"><![CDATA[
 		Work ONLY on MySQL databases. Tested on MySQL 5.
