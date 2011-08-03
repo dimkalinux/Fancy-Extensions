@@ -1,0 +1,27 @@
+<?php
+
+$lang_fancy_alerts = array(
+	'Alerts Topics'					=> 'T:&nbsp;',
+	'Alerts Topics Title'			=> 'View your topics updates',
+	'Alerts Quotes'					=> 'P:&nbsp;',
+	'Alerts Quotes Title'			=> 'View quotes your posts',
+	'Your Alerts Topics'			=> 'Your Topics updates',
+	'Your Alerts Quotes'			=> 'Your Posts quotes',
+	'Mark all quotes as read'		=> 'Mark all quotes readed',
+	'Mark all topics as read'		=> 'Mark all my topics readed',
+	'Mark all quotes redirect'		=> 'All quotes have been marked as read.',
+	'Mark all topics redirect'		=> 'All your topics have been marked as read.',
+	'Alerts Topics On'				=> 'Alerts: <span class="fancy_alerts_status_on">on</span>',
+	'Alerts Topics On Title'		=> 'Turn Topic Alerts off',
+	'Alerts Topics on redirect'		=> 'Alerts turning on.',
+	'Alerts Topics Off'				=> 'Alerts: off',
+	'Alerts Topics Off Title'		=> 'Turn Topic Alerts on',
+	'Alerts Topics off redirect'	=> 'Alerts turning off.',
+	'View your topics alerts'		=> 'View all my alerts topics',
+	'View user topics alerts'		=> 'View all %s\'s alerts topics',
+	'Search Alerts Topics'			=> 'Topic Alerts',
+	'Go to settings'				=> 'Settings',
+	'Settings Name'					=> 'Settings for Fancy Alerts',
+	'Settings Autoupdate Name'		=> 'Autoupdate interval',
+	'Settings Autoupdate Help'		=> 'In seconds. 0 — disable. Recommended — 60. (Require pun_jquery)',
+);

@@ -1,0 +1,27 @@
+<?php
+
+$lang_fancy_alerts = array(
+	'Alerts Topics'					=> 'Т:&nbsp;',
+	'Alerts Topics Title'			=> 'Просмотреть обновления ваших тем',
+	'Alerts Quotes'					=> 'C:&nbsp;',
+	'Alerts Quotes Title'			=> 'Просмотреть цитирования ваших сообщений',
+	'Your Alerts Topics'			=> 'Обновления ваших тем',
+	'Your Alerts Quotes'			=> 'Цитаты ваших сообщений',
+	'Mark all quotes as read'		=> 'Отметить все цитаты прочитанными',
+	'Mark all topics as read'		=> 'Отметить все мои темы прочитанными',
+	'Mark all quotes redirect'		=> 'Все цитаты отмечены прочитанными.',
+	'Mark all topics redirect'		=> 'Все ваши темы отмечены прочитанными.',
+	'Alerts Topics On'				=> 'Алерты: <span class="fancy_alerts_status_on">вкл</span>',
+	'Alerts Topics On Title'		=> 'Выключить алерты',
+	'Alerts Topics on redirect'		=> 'Алерт включен.',
+	'Alerts Topics Off'				=> 'Алерты: выкл',
+	'Alerts Topics Off Title'		=> 'Включить алерты',
+	'Alerts Topics off redirect'	=> 'Алерт выключен.',
+	'View your topics alerts'		=> 'Показать ваши темы с алертами',
+	'View user topics alerts'		=> 'Показать все %s\'s темы с алертами',
+	'Search Alerts Topics'			=> 'Темы с алертами',
+	'Go to settings'				=> 'Настройки',
+	'Settings Name'					=> 'Fancy Alerts параметры',
+	'Settings Autoupdate Name'		=> 'Интервал автообновления',
+	'Settings Autoupdate Help'		=> 'В секундах. 0 — отключено. Рекомендуется — 60. (Необходим pun_jquery)',
+);
