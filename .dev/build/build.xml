@@ -9,7 +9,7 @@
 	<!-- SOURCE DIRS -->
 	<property name="src-root" value="${basedir}/../../" />
 
-	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker, fancy_spellcheck">
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker, fancy_spellcheck, fancy_alerts">
 		<echo>Build done.</echo>
 	</target>
 
@@ -146,6 +146,28 @@
 		<compress-css-lib tofile="${src-root}/fancy_spellcheck/css/dark_Oxygen/fancy_spellcheck.min.css" force="true">
 			<filelist dir="${src-root}/fancy_spellcheck/css/dark_Oxygen/">
 				<file name="fancy_spellcheck.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+
+
+	<!-- FANCY ALERTS -->
+	<target name="fancy_alerts">
+		<compress-js-lib tofile="${src-root}/fancy_alerts/js/fancy_alerts.min.js" force="true">
+			<filelist dir="${src-root}/fancy_alerts/js/">
+				<file name="fancy_alerts.js" />
+			</filelist>
+		</compress-js-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_alerts/css/Oxygen/fancy_alerts.min.css" force="true">
+			<filelist dir="${src-root}/fancy_alerts/css/Oxygen/">
+				<file name="fancy_alerts.css" />
+			</filelist>
+		</compress-css-lib>
+
+		<compress-css-lib tofile="${src-root}/fancy_alerts/css/dark_Oxygen/fancy_alerts.min.css" force="true">
+			<filelist dir="${src-root}/fancy_alerts/css/dark_Oxygen/">
+				<file name="fancy_alerts.css" />
 			</filelist>
 		</compress-css-lib>
 	</target>

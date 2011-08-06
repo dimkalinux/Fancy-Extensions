@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_alerts</id>
 	<title>Fancy Alerts</title>
-	<version>1.5.7</version>
+	<version>1.5.8</version>
 	<description>Show alerts for updates in your topics and quotes you posts</description>
 	<author>dimka.linux@gmail.com</author>
 
