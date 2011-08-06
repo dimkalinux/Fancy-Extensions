@@ -1,0 +1,31 @@
+/* Favorite only background (should be something between sticky and normal one) */
+.brd .main-content .favorite {
+	background: #F7F8FA;
+	}
+
+/* Favorite and sticky background (should be the same as sticky) */
+.brd .main-content .favorite.sticky,
+.brd .main-content .sticky .favorite {
+	background: #F2F4FA;
+	}
+
+/* Favorite sign style (should be the same as sticky) */
+.brd .main-content .main-item .hn .item-status em.favorite {
+	color: #314B60;
+	font-weight: bold;
+	}
+
+/* Favorite icon (should be the same as sticky) */
+.brd .main-content .favorite .icon {
+	border-color: #D7E5F3 #C3CFDC #9FB3C7 #90A2B4
+	}
+
+/* Favorite and closed icon (should be the same as sticky&closed) */
+.brd .main-content .favorite .closed {
+	border-color: #D7E5F3 #C3CFDC #898989 #7A7A7A
+	}
+
+/* Favorite and new icon (should be the same as new) */
+.brd .main-content .favorite .new {
+	border-color: #2B75AD #235E8C #1F537B #266799
+	}

@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_favorite_topic</id>
+	<title>Fancy Favorite Topics</title>
+	<version>1.6</version>
+	<description>Let users to assign favorite topics. Users can stick those topics. (based on YonasH ext)</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC2</maxtestedon>
+
+
+	<install><![CDATA[
+		if (!$forum_db->table_exists('favorites')) {
+			$schema = array(
+				'FIELDS'			=> array(
+					'user_id'		=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'		=> '0'
+					),
+					'topic_id'			=> array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'		=> '0'
+					)
+				),
+				'PRIMARY KEY'	=> array('user_id', 'topic_id'),
+				'UNIQUE'	=> array('user_id, topic_id'),
+				'INDEXES'		=> array(
+					'user_id__topic_id_idx'	=> array('user_id,topic_id')
+				)
+			);
+			$forum_db->create_table('favorites', $schema);
+		}
+
+		if (!$forum_db->field_exists('users', 'stick_favorites')) {
+			$forum_db->add_field('users', 'stick_favorites', 'TINYINT(1)', false, 1);
+			$forum_db->add_index('users', 'i_stick_favorites', array('stick_favorites'), false, false);
+		}
+	]]></install>
+
+	<uninstall><![CDATA[
+		$forum_db->drop_table('favorites');
+		$forum_db->drop_field('users', 'stick_favorites');
+		$forum_db->drop_index('users', 'i_stick_favorites', false);
+	]]></uninstall>
+
+
+	<hooks>
+		<hook id="vt_qr_get_topic_info"><![CDATA[
+			// add favorite checking to viewtopic SQL / collect lang file
+			if (!$forum_user['is_guest']) {
+				$query['SELECT'] .= ', fav.user_id AS is_favorite';
+				$query['JOINS'][] = array(
+					'LEFT JOIN'	=> 'favorites AS fav',
+					'ON'		=> '(t.id=fav.topic_id AND fav.user_id='.$forum_user['id'].')'
+				);
+
+				if (!isset($lang_favorite_topic)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+			}
+		]]></hook>
+
+		<hook id="vt_pre_header_load" priority="3"><![CDATA[
+			if (!$forum_user['is_guest']) {
+				if ($cur_topic['is_favorite']) {
+					$forum_page['main_head_options']['fancy_favorite_topic_disable'] = '<span><a class="sub-option" href="'.forum_link($forum_url['unfavorite'], array($id, generate_form_token('unfavorite'.$id.$forum_user['id']))).'"><em>'.$lang_favorite_topic['Unfavorite'].'</em></a></span>';
+				} else {
+					$forum_page['main_head_options']['fancy_favorite_topic_enable'] = '<span><a class="sub-option" href="'.forum_link($forum_url['favorite'], array($id, generate_form_token('unfavorite'.$id.$forum_user['id']))).'">'.$lang_favorite_topic['Favorite'].'</a></span>';
+				}
+			}
+		]]></hook>
+
+		<hook id="vf_qr_get_topics"><![CDATA[
+			$query['SELECT'] .= ', fav.user_id AS favorite';
+			$query['JOINS'][] = array(
+				'LEFT JOIN'		=> 'favorites AS fav',
+				'ON'			=> '(fav.topic_id=t.id AND fav.user_id='.$forum_user['id'].')'
+			);
+
+			if ($forum_user['stick_favorites'] == '1') {
+				$query['ORDER BY'] = 't.sticky DESC, favorite DESC, '.(($cur_forum['sort_by'] == '1') ? 't.posted' : 't.last_post').' DESC';
+			}
+		]]></hook>
+
+
+		<hook id="vf_topic_loop_normal_topic_pre_item_title_status_merge"><![CDATA[
+		if ($cur_topic['favorite']) {
+			global $lang_favorite_topic;
+			if (!isset($lang_favorite_topic)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$forum_page['item_title_status']['favorite'] = '<em class="favorite">'.$lang_favorite_topic['isFavorite'].'</em>';
+			$forum_page['item_status']['favorite'] = 'favorite';
+		}
+		]]></hook>
+
+
+		<hook id="mi_new_action"><![CDATA[
+		if ($action == 'favorite' || $action == 'unfavorite') {
+			$ft_error = 1;
+			$ft_message = $ft_url = $ft_url_name = '';
+			$ft_json = isset($_GET['json']) ? TRUE : FALSE;
+
+
+			do {
+				if ($forum_user['is_guest']) {
+					$ft_message = $lang_common['No permission'];
+					break;
+				}
+
+				$topic_id = isset($_GET['tid']) ? intval($_GET['tid'], 10) : 0;
+
+				if ($topic_id < 1) {
+					$ft_message = $lang_common['Bad request'];
+					break;
+				}
+
+				if (!isset($lang_favorite_topic)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+
+				if ($action == 'favorite') {
+					// Make sure the user can view the topic
+					$query = array(
+						'SELECT'	=> 'subject',
+						'FROM'		=> 'topics AS t',
+						'JOINS'		=> array(
+							array(
+								'LEFT JOIN'		=> 'forum_perms AS fp',
+								'ON'			=> '(fp.forum_id=t.forum_id AND fp.group_id='.$forum_user['g_id'].')'
+							)
+						),
+						'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1) AND t.id='.$topic_id.' AND t.moved_to IS NULL'
+					);
+					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+					$subject = $forum_db->result($result);
+
+					if (is_null($subject) || $subject === false) {
+						$ft_message = $lang_common['Bad request'];
+						break;
+					}
+
+					$query = array(
+						'REPLACE'	=> 'user_id, topic_id',
+						'INTO'		=> 'favorites',
+						'VALUES'	=> $forum_user['id'].' ,'.$topic_id
+					);
+
+					$forum_db->query_build($query) or error(__FILE__, __LINE__);
+					$ft_error = 0;
+
+					if (!$ft_json) {
+						$forum_flash->add_info($lang_favorite_topic['Favorite redirect']);
+						redirect(forum_link($forum_url['topic'], array($topic_id, sef_friendly($subject))), $lang_favorite_topic['Favorite redirect']);
+					}
+
+					// set url and name for ajax
+					$ft_url = htmlspecialchars_decode(forum_link($forum_url['unfavorite'], array($topic_id, generate_form_token('unfavorite'.$topic_id.$forum_user['id']))));
+					$ft_url_name = $lang_favorite_topic['Unfavorite'];
+				} else if ($action == 'unfavorite') {
+					$query = array(
+						'SELECT'	=> 't.subject',
+						'FROM'		=> 'topics AS t',
+						'JOINS'		=> array(
+							array(
+								'INNER JOIN'	=> 'favorites AS fav',
+								'ON'			=> 'fav.user_id='.$forum_user['id'].' AND fav.topic_id=t.id'
+							)
+						),
+						'WHERE'		=> 't.id='.$topic_id
+					);
+
+					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+					$subject = $forum_db->result($result);
+
+					if (is_null($subject) || $subject === false) {
+						$ft_message = $lang_favorite_topic['Not favorite'];
+						break;
+					}
+
+					$query = array(
+						'DELETE'	=> 'favorites',
+						'WHERE'		=> 'user_id='.$forum_user['id'].' AND topic_id='.$topic_id
+					);
+
+					$result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+					$ft_error = 0;
+
+					if (!$ft_json) {
+						$forum_flash->add_info($lang_favorite_topic['Unfavorite redirect']);
+						redirect(forum_link($forum_url['topic'], array($topic_id, sef_friendly($subject))), $lang_favorite_topic['Unfavorite redirect']);
+					}
+
+					// set url and name for ajax
+					$ft_url = htmlspecialchars_decode(forum_link($forum_url['favorite'], array($topic_id, generate_form_token('favorite'.$topic_id.$forum_user['id']))));
+					$ft_url_name = $lang_favorite_topic['Favorite'];
+				}
+			} while (0);
+
+			if ($ft_error == 1) {
+				if (!$ft_json) {
+					message($ft_message);
+				}
+			}
+
+			$ft_result = array('e'=> $ft_error, 'm' => $ft_message);
+			if ($ft_error == 0) {
+				$ft_result['u'] = $ft_url;
+				$ft_result['n'] = $ft_url_name;
+			}
+			exit(json_encode($ft_result));
+		}
+		]]></hook>
+
+
+		<hook id="fn_delete_user_end"><![CDATA[
+			// Delete any favorites
+			$query = array(
+				'DELETE'	=> 'favorites',
+				'WHERE'		=> 'user_id='.$user_id
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		]]></hook>
+
+
+		<hook id="fn_delete_topic_end"><![CDATA[
+			// Delete any favorites for this topic
+			$query = array(
+				'DELETE'	=> 'favorites',
+				'WHERE'		=> 'topic_id='.$topic_id
+			);
+			$forum_db->query_build($query) or error(__FILE__, __LINE__);
+		]]></hook>
+
+
+		<hook id="pf_change_details_about_pre_header_load"><![CDATA[
+			if ($forum_page['own_profile'] || $forum_user['g_id'] == FORUM_ADMIN) {
+				global $lang_favorite_topic;
+				if (!isset($lang_favorite_topic)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_page['user_activity']['search_favorite'] = '<li'.(empty($forum_page['user_activity']) ? ' class="first-item"' : '').'><a href="'.forum_link($forum_url['search_favorite'], $id).'">'.(($forum_page['own_profile']) ? $lang_favorite_topic['View your favorite'] : sprintf($lang_favorite_topic['View user favorite'], forum_htmlencode($user['username']))).'</a></li>';
+			}
+		]]></hook>
+
+
+		<hook id="sf_fn_validate_actions_start"><![CDATA[
+			$valid_actions[] = 'show_favorite';
+		]]></hook>
+
+
+		<hook id="se_additional_quicksearch_variables"><![CDATA[
+			if ($action == 'show_favorite') {
+				define('FORUM_PAGE_FAVORITES', TRUE);
+
+				$value = isset($_GET['user_id']) ? intval($_GET['user_id'], 10) : 0;
+
+				if ($value < 2) {
+					message($lang_common['Bad request']);
+				}
+			}
+		]]></hook>
+
+
+		<hook id="sf_fn_generate_search_crumbs_start"><![CDATA[
+			if ($action == 'show_favorite') {
+				global $lang_favorite_topic;
+				if (!isset($lang_favorite_topic)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_page['crumbs'][] = $lang_favorite_topic['Your favorite'];
+				$forum_page['items_info'] = generate_items_info($lang_favorite_topic['Your favorite'], ($forum_page['start_from'] + 1), $num_hits);
+
+				return TRUE;
+			}
+		]]></hook>
+
+
+		<hook id="sf_fn_generate_action_search_query_end"><![CDATA[
+			if ($action == 'show_favorite')
+			{
+				if ($forum_user['is_guest'])
+					message($lang_common['Bad request']);
+
+				// Check we're allowed to see the subscriptions we're trying to look at
+				if ($forum_user['g_id'] != FORUM_ADMIN && $forum_user['id'] != $value) {
+					message($lang_common['Bad request']);
+				}
+
+				$query = array(
+					'SELECT'	=> 't.id AS tid, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.closed, t.sticky, t.forum_id, f.forum_name',
+					'FROM'		=> 'topics AS t',
+					'JOINS'		=> array(
+						array(
+							'INNER JOIN'	=> 'favorites AS fav',
+							'ON'			=> '(t.id=fav.topic_id AND fav.user_id='.$value.')'
+						),
+						array(
+							'INNER JOIN'	=> 'forums AS f',
+							'ON'			=> 'f.id=t.forum_id'
+						),
+						array(
+							'LEFT JOIN'		=> 'forum_perms AS fp',
+							'ON'			=> '(fp.forum_id=f.id AND fp.group_id='.$forum_user['g_id'].')'
+						)
+					),
+					'WHERE'		=> '(fp.read_forum IS NULL OR fp.read_forum=1)',
+					'ORDER BY'	=> 't.last_post DESC'
+				);
+
+				// With "has posted" indication
+				if (!$forum_user['is_guest'] && $forum_config['o_show_dot'] == '1')
+				{
+					$query['SELECT'] .= ', p.poster_id AS has_posted';
+					$query['JOINS'][]	= array(
+						'LEFT JOIN'		=> 'posts AS p',
+						'ON'			=> '(p.poster_id='.$forum_user['id'].' AND p.topic_id=t.id)'
+					);
+
+					// Must have same columns as in prev SELECT
+					$query['GROUP BY'] = 't.id, t.poster, t.subject, t.first_post_id, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_replies, t.closed, t.sticky, t.forum_id, f.forum_name, p.poster_id';
+				}
+
+				$url_type = $forum_url['search_favorite'];
+				$search_id = $value;
+			}
+		]]></hook>
+
+
+		<!-- #### option in profile #### -->
+		<hook id="pf_change_details_settings_validation"><![CDATA[
+			$form['stick_favorites'] = isset($_POST['form']['stick_favorites']) && $_POST['form']['stick_favorites'] == '1' ? '1' : '0';
+		]]></hook>
+
+
+		<hook id="pf_change_details_settings_pre_pagination_fieldset_end"><![CDATA[
+			if (!isset($lang_favorite_topic)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+?>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[stick_favorites]" value="1"<?php if ($user['stick_favorites'] == '1') echo ' checked="checked"' ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><span><?php echo $lang_favorite_topic['Stick favorites label'] ?></span> <?php echo $lang_favorite_topic['Stick favorites'] ?></label>
+					</div>
+				</div>
+<?php
+		]]></hook>
+
+
+		<!-- Insert Main Menu Entry -->
+		<hook id="fn_generate_navlinks_end"><![CDATA[
+			if (!$forum_user['is_guest']) {
+				global $lang_favorite_topic;
+				if (!isset($lang_favorite_topic)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$ft_links = '<a href="'.forum_link($forum_url['search_favorite'], $forum_user['id']).'">'.$lang_favorite_topic['isFavorite'].'</a>';
+				array_insert($links, 'logout', '<li id="fancy_favorites"'.(defined("FORUM_PAGE_FAVORITES") ? ' class="isactive"' : '').'>'.$ft_links.'</li>', 'fancy_favorites');
+			}
+		]]></hook>
+
+
+		<hook id="co_modify_url_scheme"><![CDATA[
+			require $ext_info['path'].'/url/Default.php';
+			if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+				require $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+			} else {
+				require $ext_info['path'].'/url/Default.php';
+			}
+		]]></hook>
+
+
+		<hook id="re_rewrite_rules"><![CDATA[
+			$forum_rewrite_rules['/^(favorite|unfavorite)[\/_-]?([0-9]+)[\/_-]?([a-z0-9]+)?(\.html?|\/)?$/i'] = 'misc.php?$1=$2&csrf_token=$3';
+			$forum_rewrite_rules['/^search[\/_-]?favorite[\/_-]?([0-9]+)(\.html?|\/)?$/i'] = 'search.php?action=show_favorite&user_id=$1';
+		]]></hook>
+	</hooks>
+</extension>
