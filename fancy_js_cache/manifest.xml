@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_js_cache</id>
+	<title>Fancy CSS Cacher</title>
+	<version>1.3</version>
+	<description>Automaticaly merge CSS files for faster loading</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC2</maxtestedon>
+
+
+	<install><![CDATA[
+		// check write access on cache dir
+		if (!is_writable($ext_info['path'].'/cache/')) {
+			$notices[] = '<strong>WARNING!</strong> Write access needed. Please give php the permission to write in <em>extensions/fancy_js_cache/cache/</em> before running extension.';
+		}
+
+		// Add extension options to the config table
+		forum_config_add('o_fancy_js_cache_index', '1');
+		forum_config_add('o_fancy_js_css_cache_enable', '1');
+		forum_config_add('o_fancy_js_cache_css_cdn', '');
+	]]></install>
+
+
+	<uninstall><![CDATA[
+		forum_config_remove(array(
+			'o_fancy_js_cache_index',
+			'o_fancy_js_css_cache_enable',
+			'o_fancy_js_cache_css_cdn',
+		));
+	]]></uninstall>
+
+
+	<hooks>
+		<hook id="aex_section_manage_pre_ext_actions" priority="9"><![CDATA[
+			if (!isset($lang_fancy_js_cache)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($ext['id'] == 'fancy_js_cache' && !isset($forum_page['ext_actions']['fancy_js_cache_clear'])) {
+				$forum_page['ext_actions']['fancy_js_cache_clear'] = '<span><a href="'.forum_link('misc.php?action=fancy_js_cache_clear&amp;csrf_token=$1', array(generate_form_token('fancy_js_cache_clear'.$forum_user['id']))).'">'.$lang_fancy_js_cache['Clear Cache'].'</a></span>';
+			}
+
+			if ($ext['id'] == 'fancy_js_cache' && !isset($forum_page['ext_actions']['fancy_js_cache_settings'])) {
+				$forum_page['ext_actions']['fancy_js_cache_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_js_cache['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+
+		<hook id="mi_new_action"><![CDATA[
+			if ($action == 'fancy_js_cache_clear') {
+				if (!$forum_user['is_admmod']) {
+					message($lang_common['No permission']);
+				}
+
+				if (!isset($lang_fancy_js_cache)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				// We validate the CSRF token. If it's set in POST and we're at this point, the token is valid.
+				// If it's in GET, we need to make sure it's valid.
+				if (!isset($_POST['csrf_token']) && (!isset($_GET['csrf_token']) || $_GET['csrf_token'] !== generate_form_token('fancy_js_cache_clear'.$forum_user['id']))) {
+					csrf_confirm_form();
+				}
+
+				fancy_js_cacher_clear_cache();
+
+				$forum_flash->add_info($lang_fancy_js_cache['Clear Cache redirect']);
+
+				redirect(forum_link($forum_url['admin_extensions_manage']), $lang_fancy_js_cache['Clear Cache redirect']);
+			}
+		]]></hook>
+
+
+		<hook id="es_essentials"><![CDATA[
+			define('FANCY_JS_CACHE_DIR',  $ext_info['path'].'/cache/');
+
+			function fancy_js_cacher_clear_css_cache() {
+				$d = dir(FANCY_JS_CACHE_DIR);
+
+				if ($d) {
+					while (($entry = $d->read()) !== FALSE) {
+						if (substr($entry, strlen($entry) - 4) == '.css') {
+							@unlink(FANCY_JS_CACHE_DIR.$entry);
+						}
+					}
+					$d->close();
+				}
+				unset($d);
+			}
+
+			function fancy_js_cacher_clear_cache() {
+				global $forum_db, $forum_config;
+
+				fancy_js_cacher_clear_css_cache();
+
+				$new_index = intval($forum_config['o_fancy_js_cache_index'], 10) + 2;
+
+				$query = array(
+					'UPDATE'	=> 'config',
+					'SET'		=> 'conf_value = '.$new_index,
+					'WHERE'		=> 'conf_name = \'o_fancy_js_cache_index\''
+				);
+				$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+				if (!defined('FORUM_CACHE_FUNCTIONS_LOADED')) {
+					require FORUM_ROOT.'include/cache.php';
+				}
+
+				// update cache
+				generate_config_cache();
+			}
+		]]></hook>
+
+		<hook id="ch_fn_generate_hooks_cache_start"><![CDATA[
+			fancy_js_cacher_clear_cache();
+		]]></hook>
+
+
+		<hook id="ld_fn_render_css_simple_start" priority="7"><![CDATA[
+			global $forum_config;
+
+			if ($forum_config['o_fancy_js_css_cache_enable'] == '1') {
+				include_once $ext_info['path'].'/functions.inc.php';
+
+				$fancy_cache = new FANCY_JS_CACHE($ext_info);
+				$fancy_cache->run_css($libs);
+			}
+		]]></hook>
+
+
+		<!-- OPTIONS Block -->
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+				// Load LANG
+				if (!isset($lang_fancy_js_cache)) {
+					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $lang_fancy_js_cache['Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><span><?php echo $lang_fancy_js_cache['Name'] ?></span></legend>
+
+
+
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_js_cache['Enable CSS'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_js_css_cache_enable]" value="1"<?php if ($forum_config['o_fancy_js_css_cache_enable'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_js_cache['Enable CSS label'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_js_cache['Input CSS CDN'] ?></span></label><br />
+							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_js_cache_css_cdn]" size="50" maxlength="128" value="<?php echo forum_htmlencode($forum_config['o_fancy_js_cache_css_cdn']) ?>" /></span>
+						</div>
+					</div>
+
+				</fieldset>
+<?php
+		]]></hook>
+
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_js_css_cache_enable'] = (!isset($form['fancy_js_css_cache_enable']) || (int) $form['fancy_js_css_cache_enable'] <= 0) ? '0' : '1';
+			$form['fancy_js_cache_css_cdn'] = (isset($form['fancy_js_cache_css_cdn'])) ? utf8_substr($form['fancy_js_cache_css_cdn'], 0, 128) : '';
+
+			if ($form['fancy_js_css_cache_enable'] == '0') {
+				fancy_js_cacher_clear_css_cache();
+			}
+		]]></hook>
+	</hooks>
+</extension>
+
