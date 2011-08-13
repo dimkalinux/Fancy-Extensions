@@ -34,7 +34,6 @@ PUNBB.fancy_addthis = (function () {
 
 				addthis.button(el, addthis_config, share_config);
 				PUNBB.common.addClass(el, 'js_link');
-				PUNBB.common.removeClass(el.parentNode, 'visual-hidden');
 			}
 		}
 	};

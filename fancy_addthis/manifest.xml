@@ -7,7 +7,7 @@
 	<title>Fancy AddThis</title>
 	<description>A PunBB extension that added AddThis widget</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.5.1</version>
+	<version>0.6.2</version>
 
 
 	<!-- -->
@@ -15,12 +15,27 @@
 	<maxtestedon>1.4RC2</maxtestedon>
 
 
+	<install><![CDATA[
+		// Add extension options to the config table
+		forum_config_add('o_fancy_addthis_button_gplus', '0');
+		forum_config_add('o_fancy_addthis_button_twitter', '0');
+		forum_config_add('o_fancy_addthis_button_facebook', '0');
+	]]></install>
+
+
+	<uninstall><![CDATA[
+		forum_config_remove(array(
+			'o_fancy_addthis_button_gplus',
+			'o_fancy_addthis_button_twitter',
+			'o_fancy_addthis_button_facebook',
+		));
+	]]></uninstall>
+
 	<!-- -->
 	<hooks>
 
 		<!-- include js -->
 		<hook id="vt_pre_header_load"><![CDATA[
-			// Lang
 			if (!isset($lang_fancy_addthis)) {
 				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
@@ -52,25 +67,98 @@
 
 		<!-- -->
 		<hook id="vt_row_pre_post_actions_merge" priority="7"><![CDATA[
-			$forum_page['post_actions']['fancy_addthis_code'] = '<span class="visual-hidden fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'"><span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.$lang_fancy_addthis['Share'].'</span></span>';
+			$forum_page['post_actions']['fancy_addthis_code'] = '<span class="fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'"><span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.$lang_fancy_addthis['Share'].'</span></span>';
 		]]></hook>
 
 
 		<!-- -->
 		<hook id="vt_row_pre_display" priority="7"><![CDATA[
 			if ($cur_post['id'] == $cur_topic['first_post_id']) {
-				$forum_page['message']['fancy_addthis_topic_block'] = '
-					<div id="fancy_addthis_topic_toolbox">
-						<table cellspacing="0" cellpadding="0" class="addthis_toolbox addthis_default_style" addthis:url="'.forum_link($forum_url['topic'], array($id, sef_friendly($cur_topic['subject']))).'" addthis:title="'.forum_htmlencode($cur_topic['subject']).'">
-						<tbody>
-							<tr valign="top">
-								<td><a class="addthis_button_google_plusone" g:plusone:size="medium" style="width:75px;position:relative;display:inline-block;"/></td>
-								<td><a class="addthis_button_tweet" style="cursor:pointer;width:100px;display:inline-block"></a></td>
-							</tr>
-						</tbody>
-						</table>
-					</div>';
+				if ($forum_config['o_fancy_addthis_button_gplus'] == '1' ||
+					$forum_config['o_fancy_addthis_button_twitter'] == '1' ||
+					$forum_config['o_fancy_addthis_button_facebook'] == '1') {
+
+					$forum_page['message']['fancy_addthis_topic_block'] = '
+						<div id="fancy_addthis_topic_toolbox">
+							<table cellspacing="0" cellpadding="0" class="addthis_toolbox addthis_default_style" addthis:url="'.forum_link($forum_url['topic'], array($id, sef_friendly($cur_topic['subject']))).'" addthis:title="'.forum_htmlencode($cur_topic['subject']).'">
+							<tbody>
+								<tr valign="top">';
+
+					if ($forum_config['o_fancy_addthis_button_gplus'] == '1'):
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_google_plusone" g:plusone:size="medium" style="width:75px;position:relative;display:inline-block;"/></td>';
+					endif;
+
+					if ($forum_config['o_fancy_addthis_button_twitter'] == '1'):
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_tweet" style="cursor:pointer;width:100px;display:inline-block"></a></td>';
+					endif;
+
+					$forum_page['message']['fancy_addthis_topic_block'] .= '
+								</tr>
+							</tbody>
+							</table>
+						</div>';
+				}
 			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="aex_section_manage_pre_ext_actions" priority="9"><![CDATA[
+			if (!isset($lang_fancy_addthis)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+
+			if ($ext['id'] == 'fancy_addthis' && !isset($forum_page['ext_actions']['fancy_addthis_settings'])) {
+				$forum_page['ext_actions']['fancy_addthis_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_addthis['Go to settings'].'</a></span>';
+			}
+		]]></hook>
+
+
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_addthis_button_gplus'] = (!isset($form['fancy_addthis_button_gplus']) || (int) $form['fancy_addthis_button_gplus'] <= 0) ? '0' : '1';
+			$form['fancy_addthis_button_twitter'] = (!isset($form['fancy_addthis_button_twitter']) || (int) $form['fancy_addthis_button_twitter'] <= 0) ? '0' : '1';
+			$form['fancy_addthis_button_facebook'] = (!isset($form['fancy_addthis_button_facebook']) || (int) $form['fancy_addthis_button_facebook'] <= 0) ? '0' : '1';
+		]]></hook>
+
+		<!-- OPTIONS Block -->
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			if (!isset($lang_fancy_addthis)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+
+			$forum_page['group_count'] = $forum_page['item_count'] = 0;
+?>
+				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+					<h2 class="hn"><span><?php echo $lang_fancy_addthis['Name'] ?></span></h2>
+				</div>
+				<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+					<legend class="group-legend"><span><?php echo $lang_fancy_addthis['Name'] ?></span></legend>
+
+					<fieldset class="mf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<legend><span><?php echo $lang_fancy_addthis['Enable buttons'] ?></span></legend>
+						<div class="mf-box">
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_addthis_button_gplus]" value="1"<?php if ($forum_config['o_fancy_addthis_button_gplus'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_addthis['Enable G+ button label'] ?></label>
+							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_addthis_button_twitter]" value="1"<?php if ($forum_config['o_fancy_addthis_button_twitter'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_addthis['Enable Twitter button label'] ?></label>
+							</div>
+						</div>
+					</fieldset>
+
+				</fieldset>
+<?php
 		]]></hook>
 	</hooks>
 </extension>
