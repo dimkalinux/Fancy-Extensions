@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_spoiler</id>
 	<title>Spoiler BBcode</title>
-	<version>0.5.9</version>
+	<version>0.5.25</version>
 	<description>Add BBcode tag «spoiler»</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -57,7 +57,9 @@
 				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
 					$forum_loader->add_css('.fancy_spoiler { display: none; padding: .35em 0; }',	array('type' => 'inline', 'media' => 'screen'));
 					$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'media' => 'screen', 'noscript' => true));
-					$forum_loader->add_js($ext_info['url'].'/js/fancy_spoiler.min.js', array('type' => 'url', 'async' => true));
+
+					// Use inline JS for small scripts
+					$forum_loader->add_js('PUNBB.fancy_spoiler=(function(){function b(c){return(c.offsetWidth!==0);}function a(c){return function(){var d=c.nextSibling,e=c.firstChild;if(d&&PUNBB.common.hasClass(d,"fancy_spoiler")){if(!b(d)){d.style.display="block";e.innerHTML=e.getAttribute("data-lang-close");}else{d.style.display="none";e.innerHTML=e.getAttribute("data-lang-open");}return false;}return true;};}return{init:function(){var c=PUNBB.common.arrayOfMatched(function(d){return(PUNBB.common.hasClass(d,"fancy_spoiler_switcher"));},document.getElementsByTagName("p"));PUNBB.common.map(function(d){console.log(d);d.onclick=a(d);PUNBB.common.removeClass(d,"visual-hidden");},c);}};}());PUNBB.common.addDOMReadyEvent(PUNBB.fancy_spoiler.init);', array('type' => 'inline'));
 				}
 			}
 		]]></hook>
@@ -74,8 +76,8 @@
 				if ($forum_user['style'] != 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css')) {
 					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css', array('type' => 'url', 'media' => 'screen'));
 				} else {
-					// Optimze: inline for Oxygen
-					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image { background: url("'.$ext_info['url'].'/style/Oxygen/img/spoiler.png") 50% 50% no-repeat; }', array('type' => 'inline'));
+					// Optimize: inline for Oxygen
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image { background: url("'.$ext_info['url'].'/css/Oxygen/img/spoiler.png") 50% 50% no-repeat; } .fancy_spoiler_switcher { display: inline-block; }', array('type' => 'inline'));
 				}
 			}
 		]]></hook>
