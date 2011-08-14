@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_spoiler</id>
 	<title>Spoiler BBcode</title>
-	<version>0.5.26</version>
+	<version>0.5.27</version>
 	<description>Add BBcode tag «spoiler»</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -54,7 +54,7 @@
 		<!-- -->
 		<hook id="hd_head"><![CDATA[
 			if (defined('FORUM_PAGE')) {
-				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox', 'postedit'))) {
 					$forum_loader->add_css('.fancy_spoiler { display: none; padding: .35em 0; }',	array('type' => 'inline', 'media' => 'screen'));
 					$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'media' => 'screen', 'noscript' => true));
 
