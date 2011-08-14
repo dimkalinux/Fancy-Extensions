@@ -1,9 +1,5 @@
 /*global PUNBB: true */
 
-if (typeof PUNBB === undefined || !PUNBB) {
-	var PUNBB = {};
-}
-
 PUNBB.fancy_addthis = (function () {
 	'use strict';
 

@@ -7,7 +7,7 @@
 	<title>Fancy AddThis</title>
 	<description>A PunBB extension that added AddThis widget</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.6.2</version>
+	<version>0.7</version>
 
 
 	<!-- -->
@@ -61,7 +61,7 @@
 
 
 			$forum_loader->add_js($fancy_addthis_js_env, array('type' => 'inline', 'weight' => 151));
-			$forum_loader->add_js($ext_info['url'].'/js/fancy_addthis.min.js', array('weight' => 152));
+			$forum_loader->add_js('PUNBB.fancy_addthis=(function(){var a={ui_click:true,ui_delay:75,ui_508_compliant:false};return{init:function(){var c,d,b,e,f;if(document.getElementsByClassName){f=document.getElementsByClassName("fancy-addthis-link");}else{f=PUNBB.common.arrayOfMatched(function(g){return PUNBB.common.hasClass(g,"fancy-addthis-link");},document.getElementsByTagName("span"));}for(c=0,b=f.length;c<b;c+=1){d=f[c];e={url:d.getAttribute("data-share-url")};addthis.button(d,a,e);PUNBB.common.addClass(d,"js_link");}}};}());PUNBB.common.addDOMReadyEvent(PUNBB.fancy_addthis.init);', array('type' => 'inline', 'weight' => 152));
 		]]></hook>
 
 
