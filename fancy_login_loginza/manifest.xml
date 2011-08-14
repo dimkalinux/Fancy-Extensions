@@ -1,0 +1,307 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_login_loginza</id>
+	<title>OpenID login (Loginza)</title>
+	<version>0.3</version>
+	<description>OpenID login (based  on Loginza)</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC2</maxtestedon>
+
+
+	<!-- -->
+	<install><![CDATA[
+		$forum_db->add_field('users', 'loginza_identity', 'VARCHAR(255)', TRUE, NULL);
+		$forum_db->add_field('users', 'loginza_uid', 'VARCHAR(255)', TRUE, NULL);
+		$forum_db->add_field('users', 'loginza_provider', 'VARCHAR(255)', TRUE, NULL);
+
+		forum_config_add('o_fancy_login_loginza_widget_id', '');
+		forum_config_add('o_fancy_login_loginza_secret_key', '');
+		forum_config_add('o_fancy_login_loginza_trust_openid_emails', '0');
+		forum_config_add('o_fancy_login_loginza_lang_from_forum', '1');
+		forum_config_add('o_fancy_login_loginza_providers', '');
+		forum_config_add('o_fancy_login_loginza_button_on_index', '1');
+	]]></install>
+
+
+	<!-- -->
+	<uninstall><![CDATA[
+		$forum_db->drop_field('users', 'loginza_identity');
+		$forum_db->drop_field('users', 'loginza_uid');
+		$forum_db->drop_field('users', 'loginza_provider');
+
+		forum_config_remove(array(
+			'o_fancy_login_loginza_button_on_index',
+			'o_fancy_login_loginza_providers',
+			'o_fancy_login_loginza_lang_from_forum',
+			'o_fancy_login_loginza_trust_openid_emails',
+			'o_fancy_login_loginza_widget_id',
+			'o_fancy_login_loginza_secret_key',
+		));
+	]]></uninstall>
+
+
+
+	<hooks>
+		<!-- Load JS & CSS -->
+		<hook id="hd_head"><![CDATA[
+			if (FORUM_PAGE == 'register' || FORUM_PAGE == 'login') {
+				$fancy_login_loginza = new Fancy_login_loginza;
+				if ($fancy_login_loginza->setuped()) {
+					$fancy_login_loginza_js = '
+						PUNBB.common.addDOMReadyEvent(function () {
+							var newdiv = document.createElement("div"),
+								src_div = document.getElementById("fancy_login_loginza_wrap"),
+								insert_div = document.getElementById("req-msg");
+
+							newdiv.innerHTML = src_div.innerHTML;
+							insert_div.parentNode.insertBefore(newdiv, insert_div.nextSibling);
+
+							src_div.parentNode.removeChild(src_div);
+						});';
+
+					$forum_loader->add_js('http://loginza.ru/js/widget.js', array('type' => 'url', 'group' => FORUM_JS_GROUP_COUNTER));
+					$forum_loader->add_js($fancy_login_loginza_js, array('type' => 'inline', 'group' => FORUM_JS_GROUP_COUNTER));
+				}
+			}
+		]]></hook>
+
+
+		<!-- Load Class -->
+		<hook id="es_essentials"><![CDATA[
+			include_once $ext_info['path'].'/lib/fancy_loginza_loginza.inc.php';
+		]]></hook>
+
+
+		<!-- Load Lang -->
+		<hook id="co_common"><![CDATA[
+			if (!isset($lang_fancy_login_loginza)) {
+				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+		]]></hook>
+
+
+		<!-- Load URL-scheme -->
+		<hook id="co_modify_url_scheme"><![CDATA[
+			require $ext_info['path'].'/url/Default.php';
+		]]></hook>
+
+
+		<!-- Handler for OFF -->
+		<hook id="mi_new_action"><![CDATA[
+			if ($action == 'fancy_login_loginza_off' && !$forum_user['is_guest']) {
+				$fancy_login_loginza = new Fancy_login_loginza;
+				$fancy_login_loginza->user_remove_identity($forum_user['id']);
+			}
+
+			if ($action == 'fancy_login_loginza_end_reg' && $forum_user['is_guest']) {
+				$fancy_login_loginza = new Fancy_login_loginza;
+				$fancy_login_loginza->form_end_reg(FALSE);
+			}
+		]]></hook>
+
+
+		<!-- SETTINGS -->
+		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
+			$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+?>
+			<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
+				<h2 class="hn"><span><?php echo $lang_fancy_login_loginza['Settings Name'] ?></span></h2>
+			</div>
+			<fieldset class="frm-group group<?php echo ++$forum_page['group_count'] ?>">
+				<legend class="group-legend"><span><?php echo $lang_fancy_login_loginza['Settings Name'] ?></span></legend>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box sf-short text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+							<span><?php echo $lang_fancy_login_loginza['Settings Widget Name'] ?></span>
+							<small><?php echo $lang_fancy_login_loginza['Settings Widget Help'] ?></small>
+						</label><br/>
+						<span class="fld-input">
+							<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_login_loginza_widget_id]" size="5" maxlength="5" value="<?php echo intval($forum_config['o_fancy_login_loginza_widget_id'], 10) ?>"/>
+						</span>
+					</div>
+				</div>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+							<span><?php echo $lang_fancy_login_loginza['Settings SKey Name'] ?></span>
+							<small><?php echo $lang_fancy_login_loginza['Settings SKey Help'] ?></small>
+						</label><br/>
+						<span class="fld-input">
+							<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_login_loginza_secret_key]" size="50" maxlength="60" value="<?php echo forum_htmlencode($forum_config['o_fancy_login_loginza_secret_key']) ?>"/>
+						</span>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>">
+							<span><?php echo $lang_fancy_login_loginza['Settings Providers'] ?></span>
+							<small><?php echo $lang_fancy_login_loginza['Settings Providers Help'] ?></small>
+						</label><br/>
+						<span class="fld-input">
+							<input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_login_loginza_providers]" size="50" maxlength="128" value="<?php echo forum_htmlencode($forum_config['o_fancy_login_loginza_providers']) ?>"/>
+						</span>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_login_loginza_trust_openid_emails]" value="1"<?php if ($forum_config['o_fancy_login_loginza_trust_openid_emails'] == '1') echo ' checked="checked"'; ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_login_loginza['Trust OpenID emails Help'] ?></label>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_login_loginza_lang_from_forum]" value="1"<?php if ($forum_config['o_fancy_login_loginza_lang_from_forum'] == '1') echo ' checked="checked"'; ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"></span><?php echo $lang_fancy_login_loginza['Widget Lang Help'] ?></label>
+					</div>
+				</div>
+
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_login_loginza_button_on_index]" value="1"<?php if ($forum_config['o_fancy_login_loginza_button_on_index'] == '1') echo ' checked="checked"'; ?> /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"></span><?php echo $lang_fancy_login_loginza['Show Button on Index Help'] ?></label>
+					</div>
+				</div>
+			</fieldset>
+<?php
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="aop_features_validation"><![CDATA[
+			$form['fancy_login_loginza_widget_id'] = (!isset($form['fancy_login_loginza_widget_id']) ||  intval($form['fancy_login_loginza_widget_id'], 10) < 1) ? 0 : intval($form['fancy_login_loginza_widget_id'], 10);
+			$form['fancy_login_loginza_secret_key'] = (isset($form['fancy_login_loginza_secret_key'])) ? utf8_substr(forum_trim($form['fancy_login_loginza_secret_key']), 0, 40) : '';
+
+			$form['fancy_login_loginza_trust_openid_emails'] = (!isset($form['fancy_login_loginza_trust_openid_emails']) || intval($form['fancy_login_loginza_trust_openid_emails'], 10) !== 1) ? '0' : '1';
+			$form['fancy_login_loginza_lang_from_forum'] = (!isset($form['fancy_login_loginza_lang_from_forum']) || intval($form['fancy_login_loginza_lang_from_forum'], 10) !== 1) ? '0' : '1';
+			$form['fancy_login_loginza_button_on_index'] = (!isset($form['fancy_login_loginza_button_on_index']) || intval($form['fancy_login_loginza_button_on_index'], 10) !== 1) ? '0' : '1';
+
+			// Providers
+			$fancy_login_loginza = new Fancy_login_loginza;
+			$fancy_login_loginza_providers = $fancy_login_loginza->parse_providers($form['fancy_login_loginza_providers']);
+			if (is_array($fancy_login_loginza_providers) && count($fancy_login_loginza_providers) > 0) {
+				$form['fancy_login_loginza_providers'] = utf8_substr(implode(',', $fancy_login_loginza_providers), 0, 128);
+			} else {
+				$form['fancy_login_loginza_providers'] = '';
+			}
+		]]></hook>
+
+
+		<!-- Activate user -->
+		<hook id="pf_change_pass_key_pre_header_load"><![CDATA[
+
+			if ($key == $user['activate_key']) {
+
+				$fancy_login_loginza = new Fancy_login_loginza;
+				if ($fancy_login_loginza->user_have_loginza($id)) {
+					$query = array(
+						'UPDATE'	=> 'users',
+						'SET'		=> 'group_id='.$forum_config['o_default_user_group'].', activate_key=NULL',
+						'WHERE'		=> 'id='.$id
+					);
+					$forum_db->query_build($query) or error(__FILE__, __LINE__);
+
+					message($lang_fancy_login_loginza['Account activated']);
+				}
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pf_change_details_about_pre_user_private_info"><![CDATA[
+			$fancy_login_loginza = new Fancy_login_loginza;
+
+			if ($fancy_login_loginza->setuped() && $forum_page['own_profile'] === TRUE):
+				$forum_page['user_fancy_login_loginza'] = array();
+
+				$fancy_login_loginza = new Fancy_login_loginza;
+				if ($fancy_login_loginza->user_have_loginza($forum_user['id'])) {
+					$fl_link = '<a href="'.forum_link($forum_url['fancy_login_loginza_turn_off'], generate_form_token('fancy_login_loginza_turn_off'.$forum_user['id'])).'">'.$lang_fancy_login_loginza['Turn off'].'</a>';
+					$forum_page['user_fancy_login_loginza']['status'] = '<li><span>'.$lang_fancy_login_loginza['Status'].': '.sprintf($lang_fancy_login_loginza['Enabled'], $fl_link).'</span></li>';
+					$forum_page['user_fancy_login_loginza']['identity'] = '<li><span>'.$lang_fancy_login_loginza['Identity'].': '.forum_htmlencode($fancy_login_loginza->get_user_identity($forum_user['id'])).'</span></li>';
+				} else {
+					$fl_link = '<a href="'.$fancy_login_loginza->get_loginza_url().'" class="loginza">'.$lang_fancy_login_loginza['Turn on'].'</a>';
+					$forum_page['user_fancy_login_loginza']['status'] = '<li><span>'.$lang_fancy_login_loginza['Status'].': '.sprintf($lang_fancy_login_loginza['Disabled'], $fl_link).'</span></li>';
+				}
+
+			?>
+				<div id="loginza-profile" class="ct-set data-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="ct-box data-box">
+						<h3 class="ct-legend hn"><span><?php echo $lang_fancy_login_loginza['Loginza'] ?></span></h3>
+						<ul class="data-list">
+							<?php echo implode("\n\t\t\t\t\t\t", $forum_page['user_fancy_login_loginza'])."\n" ?>
+						</ul>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+
+
+
+		<!-- Rewrite activation email template -->
+		<hook id="fn_add_user_send_verification"><![CDATA[
+			// Load the "welcome" template
+			if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/mail_templates/welcome.tpl')) {
+				$mail_tpl = forum_trim(file_get_contents($ext_info['path'].'/lang/'.$forum_user['language'].'/mail_templates/welcome.tpl'));
+			} else {
+				$mail_tpl = forum_trim(file_get_contents($ext_info['path'].'/lang/English/mail_templates/welcome.tpl'));
+			}
+
+			// The first row contains the subject
+			$first_crlf = strpos($mail_tpl, "\n");
+			$mail_subject = forum_trim(substr($mail_tpl, 8, $first_crlf-8));
+			$mail_message = forum_trim(substr($mail_tpl, $first_crlf));
+
+			$mail_subject = str_replace('<board_title>', $forum_config['o_board_title'], $mail_subject);
+			$mail_message = str_replace('<base_url>', $base_url.'/', $mail_message);
+			$mail_message = str_replace('<username>', $user_info['username'], $mail_message);
+			$mail_message = str_replace('<activation_url>', str_replace('&amp;', '&', forum_link($forum_url['change_password_key'], array($new_uid, substr($user_info['activate_key'], 1, -1)))), $mail_message);
+			$mail_message = str_replace('<board_mailer>', sprintf($lang_common['Forum mailer'], $forum_config['o_board_title']), $mail_message);
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="hd_visit_elements"><![CDATA[
+			$fancy_login_loginza = new Fancy_login_loginza;
+			if ($fancy_login_loginza->setuped() && $forum_user['is_guest'] && $forum_config['o_fancy_login_loginza_button_on_index'] == '1') {
+				$visit_elements['<!-- forum_welcome -->'] = '<p id="welcome"><span>'.$lang_common['Not logged in'].'</span> <span>'.$lang_common['Login nag'].'</span>
+					<a href="'.$fancy_login_loginza->get_loginza_url().'" class="loginza">
+    					<img style="margin-bottom: -.4em; margin-left: .5em;" src="'.$ext_info['url'].'/css/Oxygen/img/sign_in_button_gray.gif" alt=""/>
+					</a></p>';
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="rg_end,li_end"><![CDATA[
+			$fancy_login_loginza = new Fancy_login_loginza;
+			if ($fancy_login_loginza->setuped()):
+			?>
+				<div id="fancy_login_loginza_wrap" style="display: none;">
+					<div id="fancy_login_loginza_block">
+						<div class="content-head">
+							<p class="hn"><span style="display: block; max-width: 55em; margin-bottom: .6em;"><?php echo $lang_fancy_login_loginza['Login help']; ?></span>
+								<a href="<?php echo $fancy_login_loginza->get_loginza_url(); ?>" class="loginza">
+    								<img src="<?php echo $ext_info['url']; ?>/css/Oxygen/img/sign_in_button_gray.gif" alt="<?php echo $lang_fancy_login_loginza['Login button help']; ?>"/>
+								</a>
+							</p>
+						</div>
+					</div>
+				</div>
+			<?php
+			endif;
+		]]></hook>
+	</hooks>
+</extension>
