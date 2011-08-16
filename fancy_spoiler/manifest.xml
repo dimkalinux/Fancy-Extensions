@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_spoiler</id>
 	<title>Spoiler BBcode</title>
-	<version>0.5.27</version>
+	<version>0.6.1</version>
 	<description>Add BBcode tag «spoiler»</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -36,8 +36,9 @@
 
 
 		<!-- -->
-		<hook id="ps_do_bbcode_replace"><![CDATA[
+		<hook id="ps_do_bbcode_start"><![CDATA[
 			global $lang_fancy_spoiler;
+
 			if (!isset($lang_fancy_spoiler)) {
 				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
 					include $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
@@ -46,8 +47,12 @@
 				}
 			}
 
-			$pattern[] = '#\[spoiler\](.*?)\[/spoiler\]#s';
-			$replace[] = '</p><p class="visual-hidden fancy_spoiler_switcher"><span class="js_link" data-lang-open="'.$lang_fancy_spoiler["spoiler_open"].'" data-lang-close="'.$lang_fancy_spoiler["spoiler_close"].'">'.$lang_fancy_spoiler["spoiler_open"].'</span></p><div class="fancy_spoiler">$1</div><p>';
+			if (strpos($text, '[spoiler') !== false)
+			{
+				$text = preg_replace('#\[spoiler=(&\#039;|&quot;|"|\'|)(.*?)\\1\]#e', '"</p><div class=\"fancy_spoiler_switcher\"><div class=\"fancy_spoiler_switcher_header\"><strong>+</strong>&nbsp;".str_replace(array(\'[\', \'\\"\'), array(\'&#91;\', \'"\'), \'$2\')."</div><div class=\"fancy_spoiler\"><p>"', $text);
+				$text = preg_replace('#\[spoiler\]\s*#', '</p><div class="fancy_spoiler_switcher"><div class="fancy_spoiler_switcher_header" data-lang-open="'.$lang_fancy_spoiler["spoiler_open"].'" data-lang-close="'.$lang_fancy_spoiler["spoiler_close"].'"><strong>+</strong>&nbsp;'.$lang_fancy_spoiler["spoiler_open"].'</div><div class="fancy_spoiler"><p>', $text);
+				$text = preg_replace('#\s*\[\/spoiler\]#S', '</p></div></div><p>', $text);
+			}
 		]]></hook>
 
 
@@ -56,10 +61,27 @@
 			if (defined('FORUM_PAGE')) {
 				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox', 'postedit'))) {
 					$forum_loader->add_css('.fancy_spoiler { display: none; padding: .35em 0; }',	array('type' => 'inline', 'media' => 'screen'));
-					$forum_loader->add_css('.fancy_spoiler { display: block; } .fancy_spoiler_switcher { display: none; }', array('type' => 'inline', 'media' => 'screen', 'noscript' => true));
+					$forum_loader->add_css('
+						.fancy_spoiler {
+							display: block;
+							padding: 0.35em 0;
+							border: none !important;
+							margin: 0 !important;
+						}
+
+						.fancy_spoiler_switcher {
+							border: none !important;
+							background: inherit !important;
+							margin: 0 !important;
+							padding: 0;
+						}
+
+						.fancy_spoiler_switcher_header {
+							display: none;
+						}', array('type' => 'inline', 'media' => 'screen', 'noscript' => true));
 
 					// Use inline JS for small scripts
-					$forum_loader->add_js('PUNBB.fancy_spoiler=(function(){function b(c){return(c.offsetWidth!==0);}function a(c){return function(){var d=c.nextSibling,e=c.firstChild;if(d&&PUNBB.common.hasClass(d,"fancy_spoiler")){if(!b(d)){d.style.display="block";e.innerHTML=e.getAttribute("data-lang-close");}else{d.style.display="none";e.innerHTML=e.getAttribute("data-lang-open");}return false;}return true;};}return{init:function(){var c=PUNBB.common.arrayOfMatched(function(d){return(PUNBB.common.hasClass(d,"fancy_spoiler_switcher"));},document.getElementsByTagName("p"));PUNBB.common.map(function(d){console.log(d);d.onclick=a(d);PUNBB.common.removeClass(d,"visual-hidden");},c);}};}());PUNBB.common.addDOMReadyEvent(PUNBB.fancy_spoiler.init);', array('type' => 'inline'));
+					$forum_loader->add_js('PUNBB.fancy_spoiler=(function(){function b(c){return(c.offsetWidth!==0);}function a(c){return function(){var e=c,d=e.nextSibling;if(d&&PUNBB.common.hasClass(d,"fancy_spoiler")){if(!b(d)){d.style.display="block";if(e.getAttribute("data-lang-close")){e.innerHTML="<strong>-</strong>&nbsp;"+e.getAttribute("data-lang-close");}else{e.innerHTML="<strong>-</strong>&nbsp;"+e.innerHTML.substr(24);}}else{d.style.display="none";if(e.getAttribute("data-lang-open")){e.innerHTML="<strong>+</strong>&nbsp;"+e.getAttribute("data-lang-open");}else{e.innerHTML="<strong>+</strong>&nbsp;"+e.innerHTML.substr(24);}}return false;}return true;};}return{init:function(){var c=PUNBB.common.arrayOfMatched(function(d){return(PUNBB.common.hasClass(d,"fancy_spoiler_switcher_header"));},document.getElementsByTagName("div"));PUNBB.common.map(function(d){d.onclick=a(d);},c);}};}());PUNBB.common.addDOMReadyEvent(PUNBB.fancy_spoiler.init);', array('type' => 'inline'));
 				}
 			}
 		]]></hook>
@@ -77,7 +99,7 @@
 					$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_spoiler.min.css', array('type' => 'url', 'media' => 'screen'));
 				} else {
 					// Optimize: inline for Oxygen
-					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image { background: url("'.$ext_info['url'].'/css/Oxygen/img/spoiler.png") 50% 50% no-repeat; } .fancy_spoiler_switcher { display: inline-block; }', array('type' => 'inline'));
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_spoiler.image{background:url("'.$ext_info['url'].'/css/Oxygen/img/spoiler.png") 50% 50% no-repeat}.fancy_spoiler_switcher{border:solid 1px #eee!important;border-radius:.2em;background:#fff;padding:.5em .75em;margin:.75em 1em}.fancy_spoiler_switcher_header{color:#cb4b16;cursor:pointer;-moz-user-select:none;-webkit-user-select:none;user-select:none}.fancy_spoiler{margin-top:.7em!important;padding-top:.7em!important;color:#333;border-top:dashed 1px #eee!important}', array('type' => 'inline'));
 				}
 			}
 		]]></hook>

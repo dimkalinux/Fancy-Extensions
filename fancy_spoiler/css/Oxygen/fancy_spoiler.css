@@ -3,5 +3,24 @@
 }
 
 .fancy_spoiler_switcher {
-    display: inline-block;
+    border: solid 1px #eee !important;
+    border-radius: .2em;
+    background: #fff;
+    padding: .5em .75em;
+    margin: .75em 1em;
+}
+
+.fancy_spoiler_switcher_header {
+    color: #CB4B16;
+    cursor: pointer;
+    -moz-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.fancy_spoiler {
+    margin-top: .7em !important;
+    padding-top: .7em !important;
+    color: #333;
+    border-top: dashed 1px #EEEEEE !important;
 }

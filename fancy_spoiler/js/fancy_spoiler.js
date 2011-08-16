@@ -12,16 +12,24 @@ PUNBB.fancy_spoiler = (function () {
 	//
 	function spoiler_switcher_onclick(switcher) {
 		return function () {
-			var spoiler_block = switcher.nextSibling,
-				switcher_link = switcher.firstChild;
+			var switcher_link = switcher,
+				spoiler_block = switcher_link.nextSibling;
 
 			if (spoiler_block && PUNBB.common.hasClass(spoiler_block, 'fancy_spoiler')) {
 				if (!visible(spoiler_block)) {
 					spoiler_block.style.display = 'block';
-					switcher_link.innerHTML = switcher_link.getAttribute('data-lang-close');
+					if (switcher_link.getAttribute('data-lang-close')) {
+						switcher_link.innerHTML = '<strong>-</strong>&nbsp;'+switcher_link.getAttribute('data-lang-close');
+					} else {
+						switcher_link.innerHTML = '<strong>-</strong>&nbsp;'+switcher_link.innerHTML.substr(24);
+					}
 				} else {
 					spoiler_block.style.display = 'none';
-					switcher_link.innerHTML = switcher_link.getAttribute('data-lang-open');
+					if (switcher_link.getAttribute('data-lang-open')) {
+						switcher_link.innerHTML = '<strong>+</strong>&nbsp;'+switcher_link.getAttribute('data-lang-open');
+					} else {
+						switcher_link.innerHTML = '<strong>+</strong>&nbsp;'+switcher_link.innerHTML.substr(24);
+					}
 				}
 
 				return false;
@@ -38,15 +46,13 @@ PUNBB.fancy_spoiler = (function () {
 		init: function () {
 			// Find all Spoiler Switchers links
 			var spoiler_links = PUNBB.common.arrayOfMatched(function (el) {
-				return (PUNBB.common.hasClass(el, 'fancy_spoiler_switcher'));
-			}, document.getElementsByTagName('p'));
+				return (PUNBB.common.hasClass(el, 'fancy_spoiler_switcher_header'));
+			}, document.getElementsByTagName('div'));
 
 
 			// Bind click event
 			PUNBB.common.map(function (el) {
-				console.log(el);
 				el.onclick = spoiler_switcher_onclick(el);
-				PUNBB.common.removeClass(el, 'visual-hidden');
 			}, spoiler_links);
 		}
 	};
