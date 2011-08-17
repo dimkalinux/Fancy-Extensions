@@ -502,7 +502,7 @@ class Fancy_login_loginza {
 
 	// SHow form for email or other fields that not found in Loginza Profile
 	public function form_end_reg($session_id='') {
-		global $forum_db, $forum_url, $lang_common, $forum_config, $base_url, $forum_start, $tpl_main, $forum_user, $forum_page, $forum_updates, $ext_info, $lang_profile, $forum_head, $forum_loader, $forum_flash_messenger, $lang_fancy_login_loginza;
+		global $forum_db, $forum_url, $lang_common, $forum_config, $base_url, $forum_start, $tpl_main, $forum_user, $forum_page, $forum_updates, $ext_info, $lang_profile, $forum_head, $forum_loader, $forum_flash, $lang_fancy_login_loginza;
 
 		// Load the profile.php language file
 		require FORUM_ROOT.'lang/'.$forum_user['language'].'/profile.php';
