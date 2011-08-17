@@ -103,6 +103,8 @@ PUNBB.fancy_image = (function () {
 			original_url = null;
 		} else if (current_url.indexOf("ipicture.ru") > 0) {
 			original_url = null;
+		} else if (current_url.indexOf("imageshost.ru") > 0) {
+			original_url = null;
 		}
 
 		return original_url;
