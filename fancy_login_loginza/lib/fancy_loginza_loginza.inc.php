@@ -611,7 +611,7 @@ class Fancy_login_loginza {
 			</div>
 		</form>
 	</div>
-<?
+<?php
 		$tpl_temp = forum_trim(ob_get_contents());
 		$tpl_main = str_replace('<!-- forum_main -->', $tpl_temp, $tpl_main);
 		ob_end_clean();
