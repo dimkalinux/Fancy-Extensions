@@ -80,11 +80,11 @@
 	<target name="fancy_jquery_addons">
 		<compress-js-lib tofile="${src-root}/fancy_jquery_addons/js/fancy_jquery_addons.min.js" force="true">
 			<filelist dir="${src-root}/fancy_jquery_addons/js/">
-				<file name="jquery.cookie.js" />
 				<file name="jquery.easing.js" />
-				<file name="jquery.fancybox-1.3.4.js" />
-				<file name="jquery.hotkeys.js" />
 				<file name="jquery.mousewheel.js" />
+				<file name="jquery.fancybox-1.3.4.js" />
+				<file name="jquery.cookie.js" />
+				<file name="jquery.hotkeys.js" />
 				<file name="jquery.sha1.js" />
 				<file name="jquery.timers-1.2.js" />
 				<file name="jquery.tools.min.js" />

@@ -1,38 +1,34 @@
 /*global PUNBB: true */
 
-if (typeof PUNBB === undefined || !PUNBB) {
-	var PUNBB = {};
-}
-
 PUNBB.fancy_image = (function () {
-	'use strict';
+	"use strict";
 
 	function fancy_image_run() {
-		$('.fancyimagethumbs > img').each(function () {
-			if ($(this).data('fancy') === true) {
+		$(".fancyimagethumbs > img").each(function () {
+			if ($(this).data("fancy") === true) {
 				return;
 			}
 
-			$(this).data('fancy', true);
+			$(this).data("fancy", true);
 
 			var $image = $(this),
-				image_preview_url = $image.attr('rel'),
-				$image_link = $image.parents('a').eq(0),
-				group_id = $image.parents('.post').find('h4').attr('id');
+				image_preview_url = $image.attr("rel"),
+				$image_link = $image.parents("a").eq(0),
+				group_id = $image.parents(".post").find("h4").attr("id");
 
 			if (!$image_link) {
 				return;
 			}
 
 			if (image_preview_url) {
-				$image_link.attr('href', image_preview_url);
+				$image_link.attr("href", image_preview_url);
 
 				if (group_id) {
-					$image_link.attr('rel', group_id);
+					$image_link.attr("rel", group_id);
 				}
 
-				$image_link.addClass('fancy_zoom');
-				$image.removeAttr('rel');
+				$image_link.addClass("fancy_zoom");
+				$image.removeAttr("rel");
 			}
 
 			$image_link.fancybox({
@@ -80,7 +76,7 @@ PUNBB.fancy_image = (function () {
 
 	//
 	function formatTitle(title, currentArray, currentIndex, currentOpts) {
-		return '<div id="fancybox-title-over"><a id="fancy_title_link" href="">'+PUNBB.env.fancy_image.lang_title+'</a></div>';
+		return "<div id=\"fancybox-title-over\"><a id=\"fancy_title_link\" href=\"\">"+PUNBB.env.fancy_image.lang_title+"</a></div>";
 	}
 
 
@@ -113,7 +109,7 @@ PUNBB.fancy_image = (function () {
 
 	return {
 		init: function () {
-			$(document).bind('run.fancy_image', fancy_image_run).trigger('run.fancy_image');
+			$(document).bind("run.fancy_image", fancy_image_run).trigger("run.fancy_image");
 		}
 	};
 }());
