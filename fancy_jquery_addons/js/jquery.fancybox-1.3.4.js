@@ -29,13 +29,11 @@
 		isIE6 = $.browser.msie && $.browser.version < 7 && !window.XMLHttpRequest,
 
 		/*
-		 * Private methods
+		 * Private methods 
 		 */
 
 		_abort = function() {
-			if (loading) {
-				loading.hide();
-			}
+			loading.hide();
 
 			imgPreloader.onerror = imgPreloader.onload = null;
 
@@ -43,16 +41,12 @@
 				ajaxLoader.abort();
 			}
 
-			if (tmp) {
-				tmp.empty();
-			}
+			tmp.empty();
 		},
 
 		_error = function() {
 			if (false === selectedOpts.onError(selectedArray, selectedIndex, selectedOpts)) {
-				if (loading) {
-					loading.hide();
-				}
+				loading.hide();
 				busy = false;
 				return;
 			}
@@ -62,17 +56,15 @@
 			selectedOpts.width = 'auto';
 			selectedOpts.height = 'auto';
 
-			if (tmp) {
-				tmp.html( '<p id="fancybox-error">The requested content cannot be loaded.<br />Please try again later.</p>' );
-			}
+			tmp.html( '<p id="fancybox-error">The requested content cannot be loaded.<br />Please try again later.</p>' );
 
 			_process_inline();
 		},
 
 		_start = function() {
 			var obj = selectedArray[ selectedIndex ],
-				href,
-				type,
+				href, 
+				type, 
 				title,
 				str,
 				emb,
@@ -154,7 +146,7 @@
 					selectedOpts.width = 'auto';
 					selectedOpts.height = 'auto';
 				} else {
-					selectedOpts.autoDimensions = false;
+					selectedOpts.autoDimensions = false;	
 				}
 			}
 
@@ -169,12 +161,10 @@
 			selectedOpts.padding = parseInt(selectedOpts.padding, 10);
 			selectedOpts.margin = parseInt(selectedOpts.margin, 10);
 
-			if (tmp) {
-				tmp.css('padding', (selectedOpts.padding + selectedOpts.margin));
-			}
+			tmp.css('padding', (selectedOpts.padding + selectedOpts.margin));
 
 			$('.fancybox-inline-tmp').unbind('fancybox-cancel').bind('fancybox-change', function() {
-				$(this).replaceWith(content.children());
+				$(this).replaceWith(content.children());				
 			});
 
 			switch (type) {
@@ -295,14 +285,14 @@
 				w = parseInt( ($(window).width() - (selectedOpts.margin * 2)) * parseFloat(w) / 100, 10) + 'px';
 
 			} else {
-				w = w == 'auto' ? 'auto' : w + 'px';
+				w = w == 'auto' ? 'auto' : w + 'px';	
 			}
 
 			if (h.toString().indexOf('%') > -1) {
 				h = parseInt( ($(window).height() - (selectedOpts.margin * 2)) * parseFloat(h) / 100, 10) + 'px';
 
 			} else {
-				h = h == 'auto' ? 'auto' : h + 'px';
+				h = h == 'auto' ? 'auto' : h + 'px';	
 			}
 
 			tmp.wrapInner('<div style="width:' + w + ';height:' + h + ';overflow: ' + (selectedOpts.scrolling == 'auto' ? 'auto' : (selectedOpts.scrolling == 'yes' ? 'scroll' : 'hidden')) + ';position:relative;"></div>');
@@ -455,8 +445,8 @@
 				return;
 			}
 
-			if (currentOpts.titlePosition == 'inside' && titleHeight > 0) {
-				title.show();
+			if (currentOpts.titlePosition == 'inside' && titleHeight > 0) {	
+				title.show();	
 			}
 
 			content
@@ -570,7 +560,7 @@
 				});
 			}
 
-			if (!currentOpts.showNavArrows) {
+			if (!currentOpts.showNavArrows) { 
 				nav_left.hide();
 				nav_right.hide();
 				return;
@@ -606,7 +596,7 @@
 			}
 
 			_set_navigation();
-
+	
 			if (currentOpts.hideOnContentClick)	{
 				content.bind('click', $.fancybox.close);
 			}
@@ -637,7 +627,7 @@
 		},
 
 		_preload_images = function() {
-			var href,
+			var href, 
 				objNext;
 
 			if ((currentArray.length -1) > currentIndex) {
@@ -780,20 +770,18 @@
 		},
 
 		_animate_loading = function() {
-			if (loading) {
-				if (!loading.is(':visible')){
-					clearInterval(loadingTimer);
-					return;
-				}
-
-				$('div', loading).css('top', (loadingFrame * -40) + 'px');
-
-				loadingFrame = (loadingFrame + 1) % 12;
+			if (!loading.is(':visible')){
+				clearInterval(loadingTimer);
+				return;
 			}
+
+			$('div', loading).css('top', (loadingFrame * -40) + 'px');
+
+			loadingFrame = (loadingFrame + 1) % 12;
 		};
 
 	/*
-	 * Public methods
+	 * Public methods 
 	 */
 
 	$.fn.fancybox = function(options) {
@@ -880,16 +868,12 @@
 	$.fancybox.showActivity = function() {
 		clearInterval(loadingTimer);
 
-		if (loading) {
-			loading.show();
-		}
+		loading.show();
 		loadingTimer = setInterval(_animate_loading, 66);
 	};
 
 	$.fancybox.hideActivity = function() {
-		if (loading) {
-			loading.hide();
-		}
+		loading.hide();
 	};
 
 	$.fancybox.next = function() {
@@ -1030,14 +1014,14 @@
 		var view, align;
 
 		if (busy) {
-			return;
+			return;	
 		}
 
 		align = arguments[0] === true ? 1 : 0;
 		view = _get_viewport();
 
 		if (!align && (wrap.width() > view[0] || wrap.height() > view[1])) {
-			return;
+			return;	
 		}
 
 		wrap
@@ -1165,7 +1149,8 @@
 		onError : function(){}
 	};
 
-	PUNBB.common.addDOMReadyEvent(function() {
+	$(document).ready(function() {
 		$.fancybox.init();
 	});
+
 })(jQuery);

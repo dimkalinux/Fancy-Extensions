@@ -115,4 +115,4 @@ PUNBB.fancy_image = (function () {
 }());
 
 // One onload handler
-PUNBB.common.addDOMReadyEvent(PUNBB.fancy_image.init);
+$(document).ready(PUNBB.fancy_image.init);
