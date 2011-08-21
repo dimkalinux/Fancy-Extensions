@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_github_gists</id>
+	<title>Fancy GitHub Gists</title>
+	<version>0.4</version>
+	<description>New BBcode tag [gist] to display embedded Gists.</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC2</maxtestedon>
+
+
+	<hooks>
+		<hook id="ps_start"><![CDATA[
+			function fancy_gist_tag_parse($gist_url) {
+				global $forum_config, $fancy_video_tag;
+
+				$match = array();
+				$gist_id = null;
+
+				// dirty trick to play arround do_clickable
+				preg_match('`href="([^"]+)"`', stripslashes($gist_url), $match);
+				if (!empty($match[1])) {
+					$gist_url = $match[1];
+				}
+
+				$match = array();
+				if (1 === preg_match('#(?:http|https)://gist.github.com/(\d+)#i', $gist_url, $match)) {
+					if (!empty($match[1])) {
+						$gist_id = intval($match[1], 10);
+					}
+				} else if (1 === preg_match('#^(\d+)$#i', $gist_url, $match)) {
+					if (!empty($match[1])) {
+						$gist_id = intval($match[1], 10);
+					}
+				}
+
+				if (!is_null($gist_id)) {
+					return '<script src="https://gist.github.com/'.forum_htmlencode($gist_id).'.js"></script>';
+				}
+
+				return $gist_url;
+			}
+		]]></hook>
+
+
+		<!-- add video tag to the list -->
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			$tags[] = 'gist';
+			$tags_opened[] = 'gist';
+			$tags_closed[] = 'gist';
+			$tags_inline[] = 'gist';
+			$tags_trim[] = 'gist';
+
+			// we must allow url due to do_clickable
+			$tags_limit_bbcode['gist'] = array('url');
+		]]></hook>
+
+
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			// ADD PARSER, EXCEPT SIG
+			if (!$is_signature) {
+				$pattern[] = '`\[gist\]([^\[]+)\[/gist\]`e';
+				$replace[] = 'fancy_gist_tag_parse(\'$1\')';
+			}
+		]]></hook>
+
+
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			$tags_without_attr[] = 'gist';
+		]]></hook>
+
+
+		<!-- REMOVE EMPTY TAGS -->
+		<hook id="ps_preparse_bbcode_end"><![CDATA[
+			if ($forum_config['p_message_bbcode'] == '1' && !$is_signature) {
+				while ($new_text = preg_replace('/\[(gist)(?:\=[^\]]*)?\]\[\/\1\]/', '', $text)) {
+					if ($new_text != $text) {
+						$text = $new_text;
+					} else {
+						break;
+					}
+				}
+			}
+		]]></hook>
+
+		<hook id="hd_head"><![CDATA[
+			if (defined('FORUM_PAGE')) {
+				if (in_array(FORUM_PAGE, array('news', 'postdelete', 'modtopic', 'post', 'viewtopic', 'searchposts', 'pun_pm-inbox', 'pun_pm-outbox'))) {
+					$forum_loader->add_css('.gist { padding: 1em 0.75em; }', array('type' => 'inline'));
+				}
+			}
+		]]></hook>
+
+		<hook id="he_new_bbcode_link"><![CDATA[
+			if (!isset($fancy_github_gists_lang)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+?>
+			<div class="entry-content">
+				<code>[gist]<?php echo $fancy_github_gists_lang['gist_uri'] ?>[/gist]</code>
+				<span> <?php echo $lang_help['produces'] ?></span>
+				<?php echo $fancy_github_gists_lang['gist_display'] ?>
+			</div>
+<?php
+		]]></hook>
+	</hooks>
+</extension>
