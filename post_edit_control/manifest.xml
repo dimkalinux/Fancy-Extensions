@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<!--
+/**
+ * PunBB Post Edit Control
+ *
+ * @copyright Copyright (C) 2009  The Hungrycoder
+ * @license http://www.gnu.org/licenses/gpl.html GPL version 2 or higher
+ * @package post_edit_control
+ */
+-->
+
+<extension engine="1.0">
+	<id>post_edit_control</id>
+	<title>Post Edit Control</title>
+	<version>0.6</version>
+
+	<description>You can control some editing features of posts using this.
+		1. You can mention number of minutes a post can be edited after its creation. After that time, normal users will be unable to edit while moderators or admins will be able.
+		2. You can control whether users can edit his/her post after someone replies.
+		3. You can control whether user can make reply even the last post of topic is created by him/her. By doing this, you can prevent consecutive posts by same user and force them to edit previous post.
+	</description>
+
+	<author>The HungryCoder (updated dimkalinux)</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4RC2</maxtestedon>
+
+
+	<install><![CDATA[
+		forum_config_add('o_post_edit_control_duration', '60');
+		forum_config_add('o_post_edit_control_lastedit', '0');
+		forum_config_add('o_post_edit_control_lastreply', '1');
+	]]></install>
+
+	<uninstall><![CDATA[
+		forum_config_remove(array(
+			'o_post_edit_control_duration',
+			'o_post_edit_control_lastedit',
+			'o_post_edit_control_lastreply'
+		));
+	]]></uninstall>
+
+	<hooks>
+		<hook id="aop_features_validation"><![CDATA[
+			$form['post_edit_control_duration'] = !empty($form['edit_control_duration']) ? intval($form['edit_control_duration']) : '60';
+			$form['post_edit_control_lastedit'] = isset($form['edit_control_lastedit']) ? 1 : 0;
+			$form['post_edit_control_lastreply'] = isset($form['edit_control_lastreply']) ? 1 : 0;
+		]]></hook>
+
+		<hook id="aop_features_avatars_fieldset_end"><![CDATA[
+			if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+				else
+					include $ext_info['path'].'/lang/English.php';
+			?>
+
+			<div class="content-head">
+				<h2 class="hn">
+					<span><?php echo $lang_post_edit_control['Edit period']; ?></span>
+				</h2>
+			</div>
+			<fieldset class="frm-group group1">
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box text">
+						<span class="fld-input">
+							<input id="fld<?php echo ++$forum_page['fld_count'] ?>" type="text" value="<?php echo $forum_config['o_post_edit_control_duration']; ?>" maxlength="6" size="6" name="form[edit_control_duration]"/><br />
+						</span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>">
+							<span><?php echo $lang_post_edit_control['Duration']; ?></span>
+							<small><?php echo $lang_post_edit_control['Duration note']; ?></small>
+						</label>
+					</div>
+					<div class="sf-box checkbox">
+						<span class="fld-input">
+							<?php $checked = (1==$forum_config['o_post_edit_control_lastedit']) ? 'checked="checked"' : '' ?>
+							<input id="fld<?php echo ++$forum_page['fld_count'] ?>" type="checkbox" name="form[edit_control_lastedit]" value="1" <?php echo $checked ?> /><br />
+						</span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>">
+							<span><?php echo $lang_post_edit_control['Block edit']; ?></span>
+							<small><?php echo $lang_post_edit_control['Block edit desc']; ?></small>
+						</label>
+					</div>
+					<div class="sf-box checkbox">
+						<span class="fld-input">
+							<?php $checked = (1==$forum_config['o_post_edit_control_lastreply']) ? 'checked="checked"' : '' ?>
+							<input id="fld<?php echo ++$forum_page['fld_count'] ?>" type="checkbox" name="form[edit_control_lastreply]" value="1" <?php echo $checked ?> /> <br />
+						</span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>">
+							<span><?php echo $lang_post_edit_control['Last reply edit']; ?></span>
+							<small><?php echo $lang_post_edit_control['Last reply edit desc']; ?></small>
+						</label>
+					</div>
+				</div>
+			</fieldset>
+			<?php
+
+		]]></hook>
+
+
+		<hook id="ed_qr_get_post_info"><![CDATA[
+			$query['SELECT'] .= ', p.posted AS pposted, t.last_post_id';
+		]]></hook>
+
+
+		<hook id="ed_post_selected"><![CDATA[
+			if (!$forum_page['is_admmod']) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+				else
+					include $ext_info['path'].'/lang/English.php';
+
+ 				// number of minutes then converted seconds
+				$pepconf = $forum_config['o_post_edit_control_duration'] * 60;
+				$difference = time() - $cur_post['pposted'];
+
+				if (($difference > $pepconf) || ($forum_config['o_post_edit_control_lastedit'] == 1 && $cur_post['last_post_id'] != $id)) {
+					message($lang_post_edit_control['No edit']);
+				}
+			}
+		]]></hook>
+
+
+		<hook id="vt_qr_get_topic_info"><![CDATA[
+				$query['SELECT'] .= ', t.last_post_id, t.last_poster, t.last_post';
+		]]></hook>
+
+
+		<hook id="vt_modify_page_details"><![CDATA[
+		 	// number of minutes then converted seconds
+			$pepconf = $forum_config['o_post_edit_control_duration'] * 60;
+			$difference = time() - $cur_topic['last_post'];
+			if ($forum_config['o_post_edit_control_lastreply']) {
+				if ($cur_topic['last_poster'] == $forum_user['username'] && $difference < $pepconf) {
+					$forum_config['o_quickpost'] = 0;
+					$forum_user['may_post']  = false;
+				}
+			}
+		]]></hook>
+
+
+		<hook id="vt_row_pre_post_actions_merge"><![CDATA[
+			if (!$forum_user['is_admmod']) {
+			 	// number of minutes then converted seconds
+				$pepconf=$forum_config['o_post_edit_control_duration'] * 60;
+				$difference = time() - $cur_post['posted'];
+
+				if (($difference > $pepconf) || ($forum_config['o_post_edit_control_lastedit'] == 1 && $cur_topic['last_post_id'] != $cur_post['id'])) {
+					unset($forum_page['post_actions']['edit']);
+				}
+			}
+		]]></hook>
+
+
+		<hook id="po_qr_get_topic_forum_info"><![CDATA[
+			$query['SELECT'] .= ', t.last_post_id, t.last_poster, t.last_post';
+		]]></hook>
+
+
+		<hook id="po_posting_location_selected"><![CDATA[
+			if (!$forum_page['is_admmod'] && $tid) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'.php'))
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'.php';
+				else
+					include $ext_info['path'].'/lang/English.php';
+
+	 			// number of minutes then converted seconds
+				$pepconf = $forum_config['o_post_edit_control_duration'] * 60;
+				$difference = time() - $cur_posting['last_post'];
+
+				if ($forum_config['o_post_edit_control_lastreply']) {
+					if (($cur_posting['last_poster'] == $forum_user['username']) && ($difference < $pepconf)) {
+						message($lang_post_edit_control['Last reply alert']);
+					}
+				}
+			}
+		]]></hook>
+	</hooks>
+</extension>
