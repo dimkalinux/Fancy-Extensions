@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_next_page_prerender</id>
+	<title>Fancy Next Page Prerender</title>
+	<description>A PunBB extension that </description>
+	<author>dimka.linux@gmail.com</author>
+	<version>0.1</version>
+
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4</maxtestedon>
+
+	<hooks>
+
+		<!-- include js -->
+		<hook id="ft_js_include"><![CDATA[
+			$forum_loader->add_js('PUNBB.common.addDOMReadyEvent(function(){var a=null,b=document.getElementsByTagName("head")[0],a=PUNBB.common.arrayOfMatched(function(a){return a.getAttribute("rel")&&a.getAttribute("rel")==="next"},document.getElementsByTagName("link"));if(a[0]&&b){var a=a[0],c=document.createElement("link");c.setAttribute("href",a.getAttribute("href"));c.setAttribute("rel","prerender");b.appendChild(c)}});', array('type' => 'inline'));
+		]]></hook>
+	</hooks>
+</extension>
