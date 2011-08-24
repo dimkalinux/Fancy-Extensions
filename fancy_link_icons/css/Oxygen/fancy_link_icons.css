@@ -1,0 +1,50 @@
+.entry-content a[href^="http://twitter.com"]:before,
+.entry-content a[href^="https://twitter.com"]:before,
+.entry-content a[href^="http://github.com"]:before,
+.entry-content a[href^="https://github.com"]:before,
+.entry-content a[href^="http://flickr.com"]:before,
+.entry-content a[href*="linkedin.com"]:before,
+.entry-content a[href^="http://last.fm"]:before,
+.entry-content a[href$=".zip"]:before,
+.entry-content a[href$=".gzip"]:before,
+.entry-content a[href$=".rar"]:before,
+.entry-content a[href$=".gz"]:before,
+.entry-content a[href^="skype:"]:before {
+	vertical-align: middle;
+	margin-right: 5px;
+	width: 16px;
+	height: 16px;
+}
+
+.entry-content a[href^="http://twitter.com"]:before,
+.entry-content a[href^="https://twitter.com"]:before {
+	content: url(icons/twitter.jpg);
+}
+
+.entry-content a[href^="http://github.com"]:before,
+.entry-content a[href^="https://github.com"]:before {
+	content: url(icons/github.png);
+}
+
+.entry-content a[href^="http://flickr.com"]:before {
+	content: url(icons/flickr.png);
+}
+
+.entry-content a[href*="linkedin.com"]:before {
+	content: url(icons/linkedin.jpg);
+}
+
+.entry-content a[href^="http://last.fm"]:before {
+	content: url(icons/lastfm.png);
+}
+
+.entry-content a[href$=".zip"]:before,
+.entry-content a[href$=".gzip"]:before,
+.entry-content a[href$=".rar"]:before,
+.entry-content a[href$=".gz"]:before {
+	content: url(icons/zip.png);
+}
+
+.entry-content a[href^="skype:"]:before {
+	content: url(icons/skype.gif);
+}

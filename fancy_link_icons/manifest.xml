@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+
+<extension engine="1.0">
+	<id>fancy_link_icons</id>
+	<title>Fancy Link Icons</title>
+	<description>A PunBB extension that add icons for some site links</description>
+	<author>dimka.linux@gmail.com</author>
+	<version>0.3</version>
+
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4</maxtestedon>
+
+	<hooks>
+
+		<!-- include css -->
+		<hook id="hd_head"><![CDATA[
+			if ($forum_user['style'] !== 'Oxygen' && file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_link_icons.min.css')) {
+				$forum_loader->add_css($ext_info['url'].'/css/'.$forum_user['style'].'/fancy_link_icons.min.css', array('type' => 'url', 'media' => 'screen'));
+			} else {
+				$forum_loader->add_css($ext_info['url'].'/css/Oxygen/fancy_link_icons.min.css', array('type' => 'url', 'media' => 'screen'));
+			}
+		]]></hook>
+	</hooks>
+</extension>
