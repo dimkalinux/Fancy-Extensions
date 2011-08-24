@@ -9,7 +9,7 @@
 	<!-- SOURCE DIRS -->
 	<property name="src-root" value="${basedir}/../../" />
 
-	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker, fancy_spellcheck, fancy_alerts">
+	<target name="init" depends="webtasks.init, fancy_addthis, fancy_prettify, fancy_spoiler, fancy_video_tag, fancy_image, fancy_jquery_addons, fancy_tracker, fancy_spellcheck, fancy_alerts, fancy_link_icons">
 		<echo>Build done.</echo>
 	</target>
 
@@ -168,6 +168,15 @@
 		<compress-css-lib tofile="${src-root}/fancy_alerts/css/dark_Oxygen/fancy_alerts.min.css" force="true">
 			<filelist dir="${src-root}/fancy_alerts/css/dark_Oxygen/">
 				<file name="fancy_alerts.css" />
+			</filelist>
+		</compress-css-lib>
+	</target>
+
+	<!-- FANCY LINK ICONS -->
+	<target name="fancy_link_icons">
+		<compress-css-lib tofile="${src-root}/fancy_link_icons/css/Oxygen/fancy_link_icons.min.css" force="true">
+			<filelist dir="${src-root}/fancy_link_icons/css/Oxygen/">
+				<file name="fancy_link_icons.css" />
 			</filelist>
 		</compress-css-lib>
 	</target>
