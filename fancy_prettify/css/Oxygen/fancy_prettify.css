@@ -5,13 +5,13 @@
 
 @media screen {
   .str { color: #080 }  /* string content */
-  .kwd { color: #2962CD; }  /* a keyword */
+  .kwd { color: #0b5ede; }  /* a keyword */
   .com { color: #800 }  /* a comment */
   .typ { color: #606 }  /* a type name */
   .lit { color: #066 }  /* a literal value */
   /* punctuation, lisp open bracket, lisp close bracket */
   .pun, .opn, .clo { color: #660 }
-  .tag { color: #2962CD; }  /* a markup tag name */
+  .tag { color: #0b5ede; }  /* a markup tag name */
   .atn { color: #606 }  /* a markup attribute name */
   .atv { color: #080 }  /* a markup attribute value */
   .dec, .var { color: #606 }  /* a declaration; a variable name */
