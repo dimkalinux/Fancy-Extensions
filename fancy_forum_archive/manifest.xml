@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_forum_archive</id>
+	<title>Forum Archive</title>
+	<version>0.3.8</version>
+	<description>Add ability to move forums from main page to archive page.</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4</maxtestedon>
+
+
+	<install><![CDATA[
+		$forum_db->add_field('forums', 'fancy_fa_in_archive', 'bool', false, 0);
+		$forum_db->add_index('forums', 'i_fancy_fa_in_archive', array('fancy_fa_in_archive'));
+	]]></install>
+
+
+	<uninstall><![CDATA[
+		$forum_db->drop_field('forums', 'fancy_fa_in_archive');
+		$forum_db->drop_index('forums', 'i_fancy_fa_in_archive');
+	]]></uninstall>
+
+	<hooks>
+
+		<!-- Add col in_archive to query -->
+		<hook id="afo_edit_forum_qr_get_forum_details"><![CDATA[
+			$query['SELECT'] .= ', f.fancy_fa_in_archive';
+		]]></hook>
+
+
+		<hook id="afo_edit_forum_pre_details_fieldset_end"><![CDATA[
+			if (!isset($lang_fancy_forum_archive)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$fancy_fa_in_archive_checkbox_value = (intval($cur_forum['fancy_fa_in_archive'], 10) === 1) ? 'value="1" checked="checked"' : 'value="1"';
+			?>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span></span><?php echo $lang_fancy_forum_archive['Archive'] ?></label><br />
+						<span class="fld-input"><?php echo '<input type="checkbox" id="fld'.$forum_page['fld_count'].'" name="fancy_fa_in_archive"'.$fancy_fa_in_archive_checkbox_value.'/>'; ?></span>
+					</div>
+				</div>
+			<?php
+		]]></hook>
+
+
+		<!-- Get parameters -->
+		<hook id="afo_save_forum_form_submitted"><![CDATA[
+			$fancy_fa_in_archive = (isset($_POST['fancy_fa_in_archive']) && $_POST['fancy_fa_in_archive'] == '1') ? '1' : '0';
+		]]></hook>
+
+
+		<!-- Modify Query -->
+		<hook id="afo_save_forum_qr_update_forum"><![CDATA[
+			$query['SET'] .= ', fancy_fa_in_archive=\''.$fancy_fa_in_archive.'\'';
+		]]></hook>
+
+
+		<!-- Index page Get Forums Query -->
+		<hook id="in_qr_get_cats_and_forums"><![CDATA[
+	 		$fancy_fa_in_archive = (isset($_GET['archive']) ? 1 : 0);
+			$query['WHERE'] = 'f.fancy_fa_in_archive='.$fancy_fa_in_archive.' AND ('.$query['WHERE'].')';
+		]]></hook>
+
+
+
+
+		<!-- Index page Define FORUM_PAGE_ARCHIVE -->
+		<hook id="in_pre_header_load"><![CDATA[
+	 		if (isset($_GET['archive'])) {
+				define('FORUM_PAGE_ARCHIVE', TRUE);
+			}
+		]]></hook>
+
+
+		<!-- Insert Main Menu Entry -->
+		<hook id="fn_generate_navlinks_end"><![CDATA[
+			// Load lang
+			global $lang_fancy_forum_archive;
+			if (!isset($lang_fancy_forum_archive)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			$archive_links = '<a href="'.forum_link($forum_url['pun_archive']).'">'.$lang_fancy_forum_archive['MainMenu'].'</a>';
+			array_insert($links, 1, '<li id="navextra1"'.(defined("FORUM_PAGE_ARCHIVE") ? ' class="isactive"' : '').'>'.$archive_links.'</li>');
+
+			if (defined('FORUM_PAGE_ARCHIVE')) {
+				$links['index'] = '<li id="navindex"><a href="'.forum_link($forum_url['index']).'">'.$lang_common['Index'].'</a></li>';
+			}
+		]]></hook>
+
+
+		<!-- disable New Topic actions for all in archived VIEWFORUM -->
+		<hook id="vf_qr_get_forum_info"><![CDATA[
+			$query['SELECT'] .= ', f.fancy_fa_in_archive';
+		]]></hook>
+
+
+		<hook id="vf_pre_header_load"><![CDATA[
+			if (intval($cur_forum['fancy_fa_in_archive'], 10) === 1) {
+				// disable Reply link
+				$forum_page['page_post']['posting'] = '<p class="posting">'.$lang_forum['No permission'].'</p>';
+
+				// disable Subscribe
+				if (isset($forum_page['main_head_options']['subscribe'])) {
+					unset($forum_page['main_head_options']['subscribe']);
+				}
+
+				// load LANG
+				if (!isset($lang_fancy_forum_archive)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				// Modify Crumbs[0]
+				$forum_page['crumbs'][0] = array($lang_fancy_forum_archive['MainMenu'], forum_link($forum_url['pun_archive']));
+			}
+		]]></hook>
+
+
+
+		<!-- disable Reply actions for all in VIEWTOPIC -->
+		<hook id="vt_qr_get_topic_info"><![CDATA[
+			$query['SELECT'] .= ', f.fancy_fa_in_archive';
+		]]></hook>
+
+		<hook id="vt_pre_header_load"><![CDATA[
+			if (intval($cur_topic['fancy_fa_in_archive'], 10) === 1) {
+				// load LANG
+				if (!isset($lang_fancy_forum_archive)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				// disable Reply link
+				$forum_page['page_post']['posting'] = '<p class="posting">'.$lang_topic['No permission'].'</p>';
+
+				// modify Crumbs
+				$forum_page['crumbs'][0] = array($lang_fancy_forum_archive['MainMenu'], forum_link($forum_url['pun_archive']));
+			}
+		]]></hook>
+
+
+		<!-- disable POST ACTIONS -->
+		<hook id="vt_row_pre_post_actions_merge"><![CDATA[
+			if (intval($cur_topic['fancy_fa_in_archive'], 10) === 1) {
+				// dont quote/edit/delete
+				if (isset($forum_page['post_actions'])) {
+					unset($forum_page['post_actions']);
+				}
+			}
+		]]></hook>
+
+
+		<!-- SELECT in_archive in POST.php -->
+		<hook id="po_qr_get_topic_forum_info,po_qr_get_forum_info,ed_qr_get_post_info,dl_qr_get_post_info"><![CDATA[
+			$query['SELECT'] .= ', f.fancy_fa_in_archive';
+		]]></hook>
+
+
+		<hook id="po_pre_permission_check"><![CDATA[
+			if (intval($cur_posting['fancy_fa_in_archive'], 10) === 1) {
+				message($lang_common['No permission']);
+			}
+		]]></hook>
+
+
+		<hook id="ed_pre_permission_check,dl_pre_permission_check"><![CDATA[
+			if (intval($cur_post['fancy_fa_in_archive'], 10) === 1) {
+				message($lang_common['No permission']);
+			}
+		]]></hook>
+
+
+		<hook id="co_modify_url_scheme"><![CDATA[
+			if ($forum_config['o_sef'] != 'Default' && file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+				require_once $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
+			} else {
+				require_once $ext_info['path'].'/url/Default.php';
+			}
+		]]></hook>
+
+
+		<hook id="re_rewrite_rules"><![CDATA[
+			$forum_rewrite_rules['/^archive(\.html?|\/)?$/i'] = 'index.php?archive=1';
+		]]></hook>
+	</hooks>
+</extension>
