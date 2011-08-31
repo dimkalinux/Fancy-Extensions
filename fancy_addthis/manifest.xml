@@ -7,7 +7,7 @@
 	<title>Fancy AddThis</title>
 	<description>A PunBB extension that added AddThis widget</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.7</version>
+	<version>0.7.5</version>
 
 
 	<!-- -->
@@ -84,12 +84,12 @@
 							<tbody>
 								<tr valign="top">';
 
-					if ($forum_config['o_fancy_addthis_button_gplus'] == '1'):
-						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_google_plusone" g:plusone:size="medium" style="width:75px;position:relative;display:inline-block;"/></td>';
+					if ($forum_config['o_fancy_addthis_button_twitter'] == '1'):
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_tweet" tw:count="none" style="cursor:pointer;min-width:50px;display:inline-block"></a></td>';
 					endif;
 
-					if ($forum_config['o_fancy_addthis_button_twitter'] == '1'):
-						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_tweet" style="cursor:pointer;width:100px;display:inline-block"></a></td>';
+					if ($forum_config['o_fancy_addthis_button_gplus'] == '1'):
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_google_plusone" g:plusone:count="false" g:plusone:size="medium" style="min-width:25px;position:relative;display:inline-block;"/></td>';
 					endif;
 
 					$forum_page['message']['fancy_addthis_topic_block'] .= '
