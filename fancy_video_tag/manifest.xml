@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_video_tag</id>
 	<title>Fancy Video Tag</title>
-	<version>0.4.6</version>
+	<version>0.4.8</version>
 	<description>New BBcode tag ([video]) to display embedded videos.</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -110,6 +110,14 @@
 				$service = array(
 					'youtube' => array(
 						'match'			=> '`youtube.com.*v=([-_a-z0-9]+)`i',
+						'uri'			=> 'http://www.youtube.com/v/%s&amp;rel=0',
+						'html5_uri'		=> '<iframe class="youtube-player" type="text/html" width="640" height="385" src="http://www.youtube.com/embed/%s" frameborder="0"></iframe>',
+						'width'			=> 640,
+						'height'		=> 385
+					),
+
+					'youtu' => array(
+						'match'			=> '`youtu.be/([-_a-z0-9]+)`i',
 						'uri'			=> 'http://www.youtube.com/v/%s&amp;rel=0',
 						'html5_uri'		=> '<iframe class="youtube-player" type="text/html" width="640" height="385" src="http://www.youtube.com/embed/%s" frameborder="0"></iframe>',
 						'width'			=> 640,
