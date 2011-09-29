@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_login_loginza</id>
 	<title>OpenID login (Loginza)</title>
-	<version>0.3.2</version>
+	<version>0.3.3</version>
 	<description>OpenID login (based  on Loginza)</description>
 	<author>dimka.linux@gmail.com</author>
 
