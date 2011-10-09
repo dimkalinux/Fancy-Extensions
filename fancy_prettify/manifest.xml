@@ -7,12 +7,12 @@
 	<title>Fancy code highliter</title>
 	<description>A PunBB extension that allows syntax highlighting of source code snippets. </description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.6.4</version>
+	<version>0.6.5</version>
 
 
 	<!-- -->
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 
 	<!-- -->

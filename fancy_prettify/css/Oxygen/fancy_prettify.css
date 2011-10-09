@@ -19,7 +19,7 @@
 }
 
 /* Use higher contrast and text-weight for printable form. */
-@media print, projection {
+@media print {
   .str { color: #060 }
   .kwd { color: #006; font-weight: bold }
   .com { color: #600; font-style: italic }
