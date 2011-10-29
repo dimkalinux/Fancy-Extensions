@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_favorite_topic</id>
 	<title>Fancy Favorite Topics</title>
-	<version>1.6</version>
+	<version>1.6.1</version>
 	<description>Let users to assign favorite topics. Users can stick those topics. (based on YonasH ext)</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 
 	<install><![CDATA[

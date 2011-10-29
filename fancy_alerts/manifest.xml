@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_alerts</id>
 	<title>Fancy Alerts</title>
-	<version>1.5.8</version>
+	<version>1.5.9</version>
 	<description>Show alerts for updates in your topics and quotes you posts</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 	<install><![CDATA[
 		forum_config_add('o_fancy_alerts_autoupdate_interval', '0');

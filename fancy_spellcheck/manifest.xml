@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>fancy_spellcheck</id>
 	<title>Fancy Spell Checker</title>
-	<version>0.4.7</version>
+	<version>0.4.8</version>
 	<description>Provide yandex spellcheck in post form</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 	<dependencies>
 		<dependency>fancy_jquery_addons</dependency>

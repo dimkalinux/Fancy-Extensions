@@ -14,7 +14,7 @@
 <extension engine="1.0">
 	<id>post_edit_control</id>
 	<title>Post Edit Control</title>
-	<version>0.6.1</version>
+	<version>0.6.2</version>
 
 	<description>You can control some editing features of posts using this.
 		1. You can mention number of minutes a post can be edited after its creation. After that time, normal users will be unable to edit while moderators or admins will be able.
@@ -25,7 +25,7 @@
 	<author>The HungryCoder (updated dimkalinux)</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 
 	<install><![CDATA[
