@@ -10,6 +10,7 @@ $lang_last_topic_title_on_forum_index = array(
 	'Name'		=> 'Last Topic Title параметры',
 	'Go to settings'		=> 'Настройки',
 	'Sync all forums'		=> 'Синхронизировать все форумы',
+    'All forums synced'  => 'Форумы синхронизированы'
 );
 
 ?>

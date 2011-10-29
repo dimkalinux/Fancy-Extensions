@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>last_topic_title_on_forum_index</id>
 	<title>Last Topic Title</title>
-	<version>0.6.2</version>
+	<version>0.6.8</version>
 	<description>Show last posts title on index page</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4RC2</maxtestedon>
+	<maxtestedon>1.4</maxtestedon>
 
 	<install><![CDATA[
 		$forum_db->drop_index('forums', 'i_last_post_subject', false);
@@ -125,7 +125,17 @@
 					sync_forum(intval($cur_forum['id'], 10));
 				}
 
-				redirect(forum_link($forum_url['admin_extensions_manage']), $lang_common['Cancel redirect']);
+				// Lang
+				if (!isset($lang_last_topic_title_on_forum_index)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_flash->add_info($lang_last_topic_title_on_forum_index['All forums synced']);
+				redirect(forum_link($forum_url['admin_extensions_manage']), $lang_last_topic_title_on_forum_index['All forums synced']);
 			}
 		]]></hook>
 
@@ -150,7 +160,7 @@
 			$last_post_subject = $forum_db->fetch_assoc($lt_result);
 
 			if (!is_null($last_post_subject) && $last_post_subject !== false) {
-				$query['SET'] .= ', last_post_subject=\''.$last_post_subject['subject'].'\'';
+				$query['SET'] .= ', last_post_subject=\''.$forum_db->escape($last_post_subject['subject']).'\'';
 			} else {
 				$query['SET'] .= ', last_post_subject=NULL';
 			}
