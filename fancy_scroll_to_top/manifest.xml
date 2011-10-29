@@ -7,7 +7,7 @@
 	<title>Fancy Scroll To Top</title>
 	<description>A PunBB extension that allows scroll to top page.</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.2.2</version>
+	<version>0.2.5</version>
 
 
 	<!-- -->
@@ -28,12 +28,12 @@
 					startline: 400
 				};';
 
-			$forum_loader->add_js($fancy_scroll_to_top_env, array('type' => 'inline', 'weight' => 150));
+			$forum_loader->add_js($fancy_scroll_to_top_env, array('type' => 'inline', 'weight' => 140));
 			$forum_loader->add_js($ext_info['url'].'/js/fancy_scroll_to_top.min.js', 
 				array(
 					'type' 		=> 'url', 
 					'async' 	=> TRUE, 
-					'weight' 	=> 150
+					'weight' 	=> 140
 				)
 			);
 
