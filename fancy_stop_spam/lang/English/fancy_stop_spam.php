@@ -28,12 +28,13 @@ $lang_fancy_stop_spam = array(
 	'Enable Check Identical'		=> 'Check identical posts',
 
 	'Enable SFS Email'				=> 'Check email by StopForumSpam',
-	'Enable SFS IP'					=> 'Check ip by StopForumSpam',
+	'Enable SFS IP'					=> 'Check IP by StopForumSpam',
 
 	'Register bot message'			=> 'Sorry, but we think you are bot. You cant register on this forum.',
 	'Register bot timeout message'	=> 'Sorry, but we think you are bot because you are fill this form too fast. Wait a few seconds and try to submit again.',
 	'Register bot timezone message'	=> 'Sorry, but we think you are bot because you are select timezone UTC−12:00. No human habitations are in this time zone. Select other timezone.',
 	'Register bot sfs email message'	=> 'Sorry, but your email identified as spam. You cant register on this forum.',
+	'Register bot sfs ip message'	=> 'Sorry, but your ip-address identified as spammers. You cant register on this forum.',
 	'Login bot message'				=> 'Sorry, but we think you are bot. You cant login on this forum.',
 	'Post bot message'				=> 'Sorry, but we think you are bot. You cant post message on this forum.',
 	'Post Identical message'		=> 'Sorry, but you cant post identical messages. Modify message and post it again.',

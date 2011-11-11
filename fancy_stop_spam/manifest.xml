@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.0</version>
+	<version>1.1</version>
 	<description>Enlarge? No, thanks!</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -22,7 +22,7 @@
 		forum_config_add('o_fancy_stop_spam_register_form_timeout', '1');
 		forum_config_add('o_fancy_stop_spam_register_form_timezone', '1');
 		forum_config_add('o_fancy_stop_spam_register_form_sfs_email', '1');
-		forum_config_add('o_fancy_stop_spam_register_form_sfs_ip', '0');
+		forum_config_add('o_fancy_stop_spam_register_form_sfs_ip', '1');
 
 		forum_config_add('o_fancy_stop_spam_login_form_honeypot', '0');
 		forum_config_add('o_fancy_stop_spam_post_form_honeypot', '1');
@@ -103,10 +103,16 @@
 			$forum_db->create_table('fancy_stop_spam_logs', $schema);
 		}
 
+		// Add cache table for StopForumSpam Emails
 		if (!$forum_db->table_exists('fancy_stop_spam_sfs_email_cache'))
 		{
 			$schema = array(
 				'FIELDS'	=>	array(
+					'ip'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=>	'0',
+					),
 					'email'			=> array(
 						'datatype'		=> 'VARCHAR(80)',
 						'allow_null'	=> false
@@ -120,6 +126,28 @@
 				'PRIMARY KEY'	=>	array('email')
 			);
 			$forum_db->create_table('fancy_stop_spam_sfs_email_cache', $schema);
+		}
+		$forum_db->add_field('fancy_stop_spam_sfs_email_cache', 'ip', 'INT(10) UNSIGNED', false, 0);
+
+		// Add cache table for StopForumSpam IPs
+		if (!$forum_db->table_exists('fancy_stop_spam_sfs_ip_cache'))
+		{
+			$schema = array(
+				'FIELDS'	=>	array(
+					'ip'	=>	array(
+						'datatype'	=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'	=>	'0',
+					),
+					'added'	=>	array(
+						'datatype'		=> 'INT(10) UNSIGNED',
+						'allow_null'	=> false,
+						'default'		=> '0',
+					),
+				),
+				'PRIMARY KEY'	=>	array('ip')
+			);
+			$forum_db->create_table('fancy_stop_spam_sfs_ip_cache', $schema);
 		}
 
 		$forum_db->add_field('users', 'fancy_stop_spam_bot', 'INT(10) UNSIGNED', false, 0);
@@ -146,6 +174,8 @@
 
 		$forum_db->drop_table('fancy_stop_spam_identical_posts');
 		$forum_db->drop_table('fancy_stop_spam_logs');
+		$forum_db->drop_table('fancy_stop_spam_sfs_email_cache');
+		$forum_db->drop_table('fancy_stop_spam_sfs_ip_cache');
 		$forum_db->drop_field('users', 'fancy_stop_spam_bot');
 	]]></uninstall>
 
@@ -192,6 +222,10 @@
 							<div class="mf-item">
 								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_register_form_sfs_email]" value="1"<?php if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1') echo ' checked="checked"'; ?> /></span>
 								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable SFS Email'] ?></label>
+							</div>
+							<div class="mf-item">
+								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_stop_spam_register_form_sfs_ip]" value="1"<?php if ($forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1') echo ' checked="checked"'; ?> /></span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Enable SFS IP'] ?></label>
 							</div>
 						</div>
 					</fieldset>
@@ -275,6 +309,7 @@
 			if (!isset($form['fancy_stop_spam_register_form_timeout']) || $form['fancy_stop_spam_register_form_timeout'] != '1') $form['fancy_stop_spam_register_form_timeout'] = '0';
 			if (!isset($form['fancy_stop_spam_register_form_timezone']) || $form['fancy_stop_spam_register_form_timezone'] != '1') $form['fancy_stop_spam_register_form_timezone'] = '0';
 			if (!isset($form['fancy_stop_spam_register_form_sfs_email']) || $form['fancy_stop_spam_register_form_sfs_email'] != '1') $form['fancy_stop_spam_register_form_sfs_email'] = '0';
+			if (!isset($form['fancy_stop_spam_register_form_sfs_ip']) || $form['fancy_stop_spam_register_form_sfs_ip'] != '1') $form['fancy_stop_spam_register_form_sfs_ip'] = '0';
 
 			if (!isset($form['fancy_stop_spam_login_form_honeypot']) || $form['fancy_stop_spam_login_form_honeypot'] != '1') $form['fancy_stop_spam_login_form_honeypot'] = '0';
 			if (!isset($form['fancy_stop_spam_post_form_honeypot']) || $form['fancy_stop_spam_post_form_honeypot'] != '1') $form['fancy_stop_spam_post_form_honeypot'] = '0';
@@ -499,10 +534,9 @@
 		]]></hook>
 
 		<hook id="rg_register_end_validation"><![CDATA[
-			// CHECK STOP FORUM SPAM EMAIL
-			if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1') {
-				if (fancy_stop_spam_check_email_by_sfs($email1)) {
-                    message($lang_fancy_stop_spam['Register bot sfs email message']);
+			if (empty($errors)) {
+				if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1' || $forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1') {
+					fancy_stop_spam_check_by_sfs(array('email' => $email1, 'ip'	=> get_remote_address()));
 				}
 			}
 		]]></hook>
@@ -740,8 +774,6 @@
 			if ($check_max_links_result !== TRUE) {
 				$errors[] = $check_max_links_result;
 			}
-
-
 		]]></hook>
 
 
