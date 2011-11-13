@@ -5,7 +5,7 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.1</version>
+	<version>1.2</version>
 	<description>Enlarge? No, thanks!</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -536,7 +536,7 @@
 		<hook id="rg_register_end_validation"><![CDATA[
 			if (empty($errors)) {
 				if ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1' || $forum_config['o_fancy_stop_spam_register_form_sfs_ip'] == '1') {
-					fancy_stop_spam_check_by_sfs(array('email' => $email1, 'ip'	=> get_remote_address()));
+					fancy_stop_spam_check_by_sfs($errors, array('email' => $email1, 'ip'	=> get_remote_address()));
 				}
 			}
 		]]></hook>
@@ -721,6 +721,27 @@
 					}
 				}
 			}
+
+
+			if (!isset($lang_fancy_stop_spam)) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+				} else {
+					require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+				}
+			}
+
+			if ($forum_user['g_id'] == FORUM_ADMIN) {
+				if (isset($forum_page['main_menu']['admin'])) {
+					array_insert($forum_page['main_menu'],
+						'admin',
+						'<li'.(($section == 'fancy_stop_spam_profile_section') ?
+						' class="active"'
+						: '').'><a href="'.forum_link($forum_url['fancy_stop_spam_profile_section'], $id).'">
+						<span>'.$lang_fancy_stop_spam['Section antispam'].'</span>
+					</a></li>', 'fancy_stop_spam_profile_section');
+				}
+			}
 		]]></hook>
 		<hook id="pf_change_details_signature_validation"><![CDATA[
 			if ($forum_config['o_fancy_stop_spam_check_signature'] == '1') {
@@ -792,6 +813,121 @@
 			if ($check_max_links_result !== TRUE) {
 				$errors[] = $check_max_links_result;
 			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="pf_change_details_new_section"><![CDATA[
+			if ($section == 'fancy_stop_spam_profile_section') {
+				if ($forum_user['g_id'] != FORUM_ADMIN) {
+					message($lang_common['Bad request']);
+				}
+
+				if (!isset($lang_fancy_stop_spam)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						require $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$fancy_stop_spam_data = fancy_stop_spam_make_request_to_sfs(array(
+					'email'	=> $user['email'],
+					'ip'	=> $user['registration_ip']
+				));
+
+				if ($fancy_stop_spam_data === FALSE) {
+					message("Can not get info from Stop Forum Spam server. Try again later.");
+				}
+
+				// Email block
+				$fancy_stop_spam_email_info = array();
+				$fancy_stop_spam_email_info[] = '<li><a href="mailto:'.forum_htmlencode($user['email']).'">'.forum_htmlencode($user['email']).'</a></li>';
+				if (isset($fancy_stop_spam_data['email']) && is_array($fancy_stop_spam_data['email'])) {
+            		if (!empty($fancy_stop_spam_data['email']['appears'])) {
+            			$fancy_stop_spam_email_info[] = '<li>'.$lang_fancy_stop_spam['Status'].': '.$lang_fancy_stop_spam['Status found'].'</li>';
+            			if (!empty($fancy_stop_spam_data['email']['lastseen'])) {
+            				$fancy_stop_spam_email_info[] = '<li>'.$lang_fancy_stop_spam['Last seen'].': '.forum_htmlencode(format_time($fancy_stop_spam_data['email']['lastseen'])).'</li>';
+            			}
+            			if (!empty($fancy_stop_spam_data['email']['frequency'])) {
+            				$fancy_stop_spam_email_info[] = '<li>'.$lang_fancy_stop_spam['Frequency'].': '.intval($fancy_stop_spam_data['email']['frequency'], 10).'</li>';
+            			}
+            		} else {
+            			$fancy_stop_spam_email_info[] = '<li>'.$lang_fancy_stop_spam['Status'].': '.$lang_fancy_stop_spam['Status not found'].'</li>';
+            		}
+            	} else {
+					$fancy_stop_spam_email_info[] = '<li>'.$lang_fancy_stop_spam['Status error'].'</li>';
+            	}
+
+
+				// IP block
+				$fancy_stop_spam_ip_info = array();
+				$fancy_stop_spam_ip_info[] = '<li><a href="'.forum_link($forum_url['get_host'], forum_htmlencode($user['registration_ip'])).'">'.forum_htmlencode($user['registration_ip']).'</a><li>';
+				if (isset($fancy_stop_spam_data['ip']) && is_array($fancy_stop_spam_data['ip'])) {
+            		if (!empty($fancy_stop_spam_data['ip']['appears'])) {
+            			$fancy_stop_spam_ip_info[] = '<li>'.$lang_fancy_stop_spam['Status'].': '.$lang_fancy_stop_spam['Status found'].'</li>';
+            			if (!empty($fancy_stop_spam_data['ip']['lastseen'])) {
+            				$fancy_stop_spam_ip_info[] = '<li>'.$lang_fancy_stop_spam['Last seen'].': '.forum_htmlencode(format_time($fancy_stop_spam_data['ip']['lastseen'])).'</li>';
+            			}
+            			if (!empty($fancy_stop_spam_data['ip']['frequency'])) {
+            				$fancy_stop_spam_ip_info[] = '<li>'.$lang_fancy_stop_spam['Frequency'].': '.intval($fancy_stop_spam_data['ip']['frequency'], 10).'</li>';
+            			}
+            		} else {
+            			$fancy_stop_spam_ip_info[] = '<li>'.$lang_fancy_stop_spam['Status'].': '.$lang_fancy_stop_spam['Status not found'].'</li>';
+            		}
+            	} else {
+					$fancy_stop_spam_ip_info[] = '<li>'.$lang_fancy_stop_spam['Status error'].'</li>';
+            	}
+
+				$forum_page['group_count'] = $forum_page['item_count'] = 0;
+
+				// Setup breadcrumbs
+				$forum_page['crumbs'] = array(
+					array($forum_config['o_board_title'], forum_link($forum_url['index'])),
+					array(sprintf($lang_profile['Users profile'], $user['username']), forum_link($forum_url['user'], $id)),
+					$lang_fancy_stop_spam['Section antispam'],
+				);
+
+				define('FORUM_PAGE', 'profile-fancy_stop_spam_profile_section');
+				require FORUM_ROOT.'header.php';
+				ob_start();
+?>
+				<div class="main-subhead">
+					<h2 class="hn">
+						<span><?php printf(($forum_user['id'] == $id) ?
+							$lang_fancy_stop_spam['Section antispam welcome'] :
+							$lang_fancy_stop_spam['Section antispam welcome user'], forum_htmlencode($user['username'])) ?>
+						</span>
+					</h2>
+				</div>
+				<div class="main-content main-frm">
+					<div class="ct-group">
+						<div class="ct-set data-set set<?php echo ++$forum_page['item_count'] ?>">
+							<div class="ct-box data-box">
+								<h4 class="ct-legend hn"><span><?php echo $lang_profile['E-mail'] ?></span></h4>
+								<ul class="data-box"><?php echo implode('', $fancy_stop_spam_email_info); ?></ul>
+							</div>
+						</div>
+						<div class="ct-set data-set">
+							<div class="ct-box data-box set<?php echo ++$forum_page['item_count'] ?>">
+								<h4 class="ct-legend hn"><span><?php echo $lang_profile['IP'] ?></span></h4>
+								<ul class="data-box"><?php echo implode('', $fancy_stop_spam_ip_info); ?></ul>
+							</div>
+						</div>
+					</div>
+				</div>
+<?php
+				$tpl_temp = forum_trim(ob_get_contents());
+				$tpl_main = str_replace('<!-- forum_main -->', $tpl_temp, $tpl_main);
+				ob_end_clean();
+				require FORUM_ROOT.'footer.php';
+			}
+		]]></hook>
+
+
+		<!-- -->
+		<hook id="co_modify_url_scheme"><![CDATA[
+			require_once $ext_info['path'].'/url/Default.php';
 		]]></hook>
 	</hooks>
 </extension>

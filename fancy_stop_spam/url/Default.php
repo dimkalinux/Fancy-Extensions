@@ -1,0 +1,9 @@
+<?php
+
+// Make sure no one attempts to run this script "directly"
+if (!defined('FORUM')) {
+	exit;
+}
+
+$forum_url['fancy_stop_spam_profile_section'] = 'profile.php?section=fancy_stop_spam_profile_section&amp;id=$1';
+?>

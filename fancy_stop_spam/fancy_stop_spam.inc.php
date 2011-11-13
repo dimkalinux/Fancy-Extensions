@@ -6,6 +6,7 @@ define('FANCY_STOP_SPAM_USER_MAX_POSTS_FOR_CHECK', 5);
 define('FANCY_STOP_SPAM_USER_MIN_FORM_FILL_TIME', 3);
 define('FANCY_STOP_SPAM_USER_IDENTICAL_POST_LIFETIME', 10800);
 define('FANCY_STOP_SPAM_EMAIL_SFS_CACHE_LIFETIME', 259200);
+define('FANCY_STOP_SPAM_EMAIL_IP_SFS_CACHE_LIFETIME', 3600);
 define('FANCY_STOP_SPAM_IP_SFS_CACHE_LIFETIME', 259200);
 define('FANCY_STOP_SPAM_SIGNATURE_HIDE_TIME', 600);
 
@@ -72,7 +73,7 @@ function fancy_stop_spam_log($activity_type, $user_id, $user_ip, $comment='') {
 function fancy_stop_spam_clear_old_logs() {
     global $forum_db;
 
-    if (fancy_stop_spam_get_num_logs() > 1000) {
+    if (fancy_stop_spam_get_num_logs() > 500) {
         $max_old_id = fancy_stop_spam_get_last_old_id_logs();
 
         if ($max_old_id > 0) {
@@ -108,7 +109,7 @@ function fancy_stop_spam_get_last_old_id_logs() {
         'SELECT'    => 'id',
         'FROM'      => 'fancy_stop_spam_logs',
         'ORDER BY'  => 'id DESC',
-        'LIMIT'     => '1000, 1'
+        'LIMIT'     => '450, 1'
     );
     $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
     return intval($forum_db->result($result), 10);
@@ -255,7 +256,7 @@ function fancy_stop_spam_debug_log($x, $m = null) {
 }
 
 
-function fancy_stop_spam_check_by_sfs($data = array()) {
+function fancy_stop_spam_check_by_sfs(&$errors, $data = array()) {
     global $forum_db, $forum_user, $forum_config, $lang_fancy_stop_spam;
 
     $need_check_email = ($forum_config['o_fancy_stop_spam_register_form_sfs_email'] == '1' && !empty($data['email']));
@@ -325,12 +326,13 @@ function fancy_stop_spam_check_by_sfs($data = array()) {
             $query = array(
                 'SELECT'    => 'COUNT(ip)',
                 'FROM'      => 'fancy_stop_spam_sfs_email_cache',
-                'WHERE'     => 'ip=\''.$forum_db->escape(fancy_stop_spam_ip2long($data['ip'])).'\''
+                'WHERE'     => 'ip=\''.$forum_db->escape(fancy_stop_spam_ip2long($data['ip'])).'\' AND added < '.time() - FANCY_STOP_SPAM_EMAIL_IP_SFS_CACHE_LIFETIME
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
                 fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_EMAIL_SFS_IP_CACHE, $forum_user['id'], get_remote_address());
-                message($lang_fancy_stop_spam['Register bot sfs ip message']);
+                $errors[] = $lang_fancy_stop_spam['Register bot sfs email ip message'];
+                return;
             }
         }
 
@@ -364,8 +366,10 @@ function fancy_stop_spam_make_request_to_sfs($data = array()) {
         if (function_exists('json_decode')) {
             $data['f'] = 'json';
         } else {
-            return FALSE;
+            $data['f'] = 'serial';
         }
+
+        $data['unix'] = '1';
 
         $check_url = 'http://www.stopforumspam.com/api?'.http_build_query($data);
         $check_result = get_remote_file($check_url, 10, FALSE, 2);
@@ -373,6 +377,8 @@ function fancy_stop_spam_make_request_to_sfs($data = array()) {
         if (isset($check_result['content']) !== FALSE && !empty($check_result['content'])) {
             if ($data['f'] == 'json') {
                 $result_data = json_decode($check_result['content'], TRUE);
+            } else {
+                $result_data = unserialize($check_result['content']);
             }
 
             if (!empty($result_data)) {

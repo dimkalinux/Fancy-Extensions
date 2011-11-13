@@ -34,6 +34,7 @@ $lang_fancy_stop_spam = array(
 	'Register bot timeout message'	=> 'Sorry, but we think you are bot because you are fill this form too fast. Wait a few seconds and try to submit again.',
 	'Register bot timezone message'	=> 'Sorry, but we think you are bot because you are select timezone UTC−12:00. No human habitations are in this time zone. Select other timezone.',
 	'Register bot sfs email message'	=> 'Sorry, but your email identified as spam. You cant register on this forum.',
+	'Register bot sfs email ip message'	=> 'A spammer was try registered with the same IP address as you within the last hour. To prevent registration flooding, at least an hour has to pass between registrations from the same IP. Sorry for the inconvenience.',
 	'Register bot sfs ip message'	=> 'Sorry, but your ip-address identified as spammers. You cant register on this forum.',
 	'Login bot message'				=> 'Sorry, but we think you are bot. You cant login on this forum.',
 	'Post bot message'				=> 'Sorry, but we think you are bot. You cant post message on this forum.',
@@ -44,6 +45,16 @@ $lang_fancy_stop_spam = array(
 	'Honey field help'				=> 'Leave this field empty',
 
 	'Enable Logs'					=> 'Log all spam events',
+
+	'Section antispam'				=> 'Antispam',
+	'Section antispam welcome'		=> 'Antispam check',
+	'Section antispam welcome user'	=> 'Antispam check %s\'s',
+	'Status'						=> 'Status',
+	'Status found'					=> 'spammer, found in database',
+	'Status not found'				=> 'clean, not found in database',
+	'Status error'					=> 'Can not get info from StopForumSpam server',
+	'Frequency'						=> 'Frequency',
+	'Last seen'						=> 'Last seen',
 );
 
 ?>
