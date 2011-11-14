@@ -9,6 +9,7 @@ define('FANCY_STOP_SPAM_EMAIL_SFS_CACHE_LIFETIME', 259200);
 define('FANCY_STOP_SPAM_EMAIL_IP_SFS_CACHE_LIFETIME', 3600);
 define('FANCY_STOP_SPAM_IP_SFS_CACHE_LIFETIME', 259200);
 define('FANCY_STOP_SPAM_SIGNATURE_HIDE_TIME', 600);
+define('FANCY_STOP_SPAM_IP_ACTIVITY_LIFETIME', 7776000);    // 90 days
 
 define('FANCY_STOP_SPAM_SUBMIT_MARK', ' ');
 
@@ -287,14 +288,16 @@ function fancy_stop_spam_check_by_sfs(&$errors, $data = array()) {
             $spam_data = fancy_stop_spam_make_request_to_sfs($data);
             if ($spam_data !== FALSE && isset($spam_data['ip']) && is_array($spam_data['ip'])) {
                 if (!empty($spam_data['ip']['appears']) && !empty($spam_data['ip']['frequency']) && intval($spam_data['ip']['frequency'], 10) > 1) {
-                    $query = array(
-                        'INSERT'    => 'ip, added',
-                        'INTO'      => 'fancy_stop_spam_sfs_ip_cache',
-                        'VALUES'    => '\''.$forum_db->escape(fancy_stop_spam_ip2long(get_remote_address())).'\', '.time()
-                    );
-                    $forum_db->query_build($query) or error(__FILE__, __LINE__);
-                    fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_IP_SFS, $forum_user['id'], get_remote_address());
-                    message($lang_fancy_stop_spam['Register bot sfs ip message']);
+                    if (!empty($spam_data['ip']['lastseen']) && $spam_data['ip']['lastseen'] > (time() - FANCY_STOP_SPAM_IP_ACTIVITY_LIFETIME)) {
+                        $query = array(
+                            'INSERT'    => 'ip, added',
+                            'INTO'      => 'fancy_stop_spam_sfs_ip_cache',
+                            'VALUES'    => '\''.$forum_db->escape(fancy_stop_spam_ip2long(get_remote_address())).'\', '.time()
+                        );
+                        $forum_db->query_build($query) or error(__FILE__, __LINE__);
+                        fancy_stop_spam_log(FANCY_STOP_SPAM_LOG_REGISTER_IP_SFS, $forum_user['id'], get_remote_address());
+                        message($lang_fancy_stop_spam['Register bot sfs ip message']);
+                    }
                 }
             }
         }
@@ -372,7 +375,7 @@ function fancy_stop_spam_make_request_to_sfs($data = array()) {
         $data['unix'] = '1';
 
         $check_url = 'http://www.stopforumspam.com/api?'.http_build_query($data);
-        $check_result = get_remote_file($check_url, 10, FALSE, 2);
+        $check_result = get_remote_file($check_url, 12, FALSE, 2);
 
         if (isset($check_result['content']) !== FALSE && !empty($check_result['content'])) {
             if ($data['f'] == 'json') {
