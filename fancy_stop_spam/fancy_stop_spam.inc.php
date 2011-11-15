@@ -329,7 +329,7 @@ function fancy_stop_spam_check_by_sfs(&$errors, $data = array()) {
             $query = array(
                 'SELECT'    => 'COUNT(ip)',
                 'FROM'      => 'fancy_stop_spam_sfs_email_cache',
-                'WHERE'     => 'ip=\''.$forum_db->escape(fancy_stop_spam_ip2long($data['ip'])).'\' AND added > '.time() - FANCY_STOP_SPAM_EMAIL_IP_SFS_CACHE_LIFETIME
+                'WHERE'     => 'ip=\''.$forum_db->escape(fancy_stop_spam_ip2long($data['ip'])).'\' AND added > '.(time() - FANCY_STOP_SPAM_EMAIL_IP_SFS_CACHE_LIFETIME)
             );
             $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
             if ($forum_db->result($result) > 0) {
