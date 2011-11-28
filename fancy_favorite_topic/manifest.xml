@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_favorite_topic</id>
 	<title>Fancy Favorite Topics</title>
-	<version>1.6.1</version>
+	<version>1.6.4</version>
 	<description>Let users to assign favorite topics. Users can stick those topics. (based on YonasH ext)</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.1</maxtestedon>
 
 
 	<install><![CDATA[
@@ -60,7 +60,7 @@
 				);
 
 				if (!isset($lang_favorite_topic)) {
-					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
 						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 					} else {
 						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
@@ -68,6 +68,7 @@
 				}
 			}
 		]]></hook>
+
 
 		<hook id="vt_pre_header_load" priority="3"><![CDATA[
 			if (!$forum_user['is_guest']) {
@@ -78,6 +79,7 @@
 				}
 			}
 		]]></hook>
+
 
 		<hook id="vf_qr_get_topics"><![CDATA[
 			$query['SELECT'] .= ', fav.user_id AS favorite';
@@ -92,20 +94,20 @@
 		]]></hook>
 
 
-		<hook id="vf_topic_loop_normal_topic_pre_item_title_status_merge"><![CDATA[
-		if ($cur_topic['favorite']) {
-			global $lang_favorite_topic;
-			if (!isset($lang_favorite_topic)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
-					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
-				} else {
-					include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
-				}
-			}
 
-			$forum_page['item_title_status']['favorite'] = '<em class="favorite">'.$lang_favorite_topic['isFavorite'].'</em>';
-			$forum_page['item_status']['favorite'] = 'favorite';
-		}
+		<hook id="vf_topic_loop_normal_topic_pre_item_title_status_merge"><![CDATA[
+			if ($cur_topic['favorite']) {
+				if (!isset($lang_favorite_topic)) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
+					} else {
+						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
+					}
+				}
+
+				$forum_page['item_title_status']['favorite'] = '<em class="favorite">'.$lang_favorite_topic['isFavorite'].'</em>';
+				$forum_page['item_status']['favorite'] = 'favorite';
+			}
 		]]></hook>
 
 
@@ -130,7 +132,7 @@
 				}
 
 				if (!isset($lang_favorite_topic)) {
-					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
 						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 					} else {
 						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
@@ -268,6 +270,7 @@
 		]]></hook>
 
 
+
 		<hook id="sf_fn_validate_actions_start"><![CDATA[
 			$valid_actions[] = 'show_favorite';
 		]]></hook>
@@ -364,7 +367,7 @@
 
 		<hook id="pf_change_details_settings_pre_pagination_fieldset_end"><![CDATA[
 			if (!isset($lang_favorite_topic)) {
-				if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
 					include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 				} else {
 					include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
@@ -385,8 +388,9 @@
 		<hook id="fn_generate_navlinks_end"><![CDATA[
 			if (!$forum_user['is_guest']) {
 				global $lang_favorite_topic;
+
 				if (!isset($lang_favorite_topic)) {
-					if (file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
+					if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php')) {
 						include_once $ext_info['path'].'/lang/'.$forum_user['language'].'/'.$ext_info['id'].'.php';
 					} else {
 						include_once $ext_info['path'].'/lang/English/'.$ext_info['id'].'.php';
@@ -394,14 +398,14 @@
 				}
 
 				$ft_links = '<a href="'.forum_link($forum_url['search_favorite'], $forum_user['id']).'">'.$lang_favorite_topic['isFavorite'].'</a>';
-				array_insert($links, 'logout', '<li id="fancy_favorites"'.(defined("FORUM_PAGE_FAVORITES") ? ' class="isactive"' : '').'>'.$ft_links.'</li>', 'fancy_favorites');
+				array_insert($links, 'profile', '<li id="fancy_favorites"'.(defined("FORUM_PAGE_FAVORITES") ? ' class="isactive"' : '').'>'.$ft_links.'</li>', 'fancy_favorites');
 			}
 		]]></hook>
 
 
 		<hook id="co_modify_url_scheme"><![CDATA[
 			require $ext_info['path'].'/url/Default.php';
-			if (file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
+			if ($forum_config['o_sef'] != 'Default' && file_exists($ext_info['path'].'/url/'.$forum_config['o_sef'].'.php')) {
 				require $ext_info['path'].'/url/'.$forum_config['o_sef'].'.php';
 			} else {
 				require $ext_info['path'].'/url/Default.php';
@@ -410,7 +414,7 @@
 
 
 		<hook id="re_rewrite_rules"><![CDATA[
-			$forum_rewrite_rules['/^(favorite|unfavorite)[\/_-]?([0-9]+)[\/_-]?([a-z0-9]+)?(\.html?|\/)?$/i'] = 'misc.php?$1=$2&csrf_token=$3';
+			$forum_rewrite_rules['/^(favorite|unfavorite)[\/_-]?([0-9]+)[\/_-]?([a-z0-9]+)?(\.html?|\/)?$/i'] = 'misc.php?action=$1&tid=$2&csrf_token=$3';
 			$forum_rewrite_rules['/^search[\/_-]?favorite[\/_-]?([0-9]+)(\.html?|\/)?$/i'] = 'search.php?action=show_favorite&user_id=$1';
 		]]></hook>
 	</hooks>

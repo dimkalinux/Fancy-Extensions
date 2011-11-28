@@ -11,10 +11,4 @@ $forum_url['favorite'] = 'misc.php?action=favorite&amp;tid=$1&amp;csrf_token=$2'
 $forum_url['unfavorite'] = 'misc.php?action=unfavorite&amp;tid=$1&amp;csrf_token=$2';
 $forum_url['search_favorite'] = 'search.php?action=show_favorite&amp;user_id=$1';
 
-
-$forum_url['favorite'] = 'misc.php?action=favorite&amp;tid=$1&amp;csrf_token=$2';
-$forum_url['unfavorite'] = 'misc.php?action=unfavorite&amp;tid=$1&amp;csrf_token=$2';
-
-//$forum_url['search_favorite'] = 'favorites/user/$1/';
-
 ?>
