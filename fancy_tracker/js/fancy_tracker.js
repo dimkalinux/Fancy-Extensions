@@ -25,7 +25,7 @@ PUNBB.fancy_tracker = (function () {
 					// Owner seeding - hide nag
 					if (parseInt(data.o, 10) === 1) {
 						$('#torrentOwnerNag:visible').slideUp(400);
-					} else if (ownerSeeding === 2) {
+					} else if (parseInt(data.o, 10) === 2) {
 						$('#torrentOwnerNag:hidden').slideDown(400);
 					}
 				}
@@ -51,4 +51,3 @@ PUNBB.fancy_tracker = (function () {
 if (PUNBB.env.page === 'viewtopic') {
 	PUNBB.common.addDOMReadyEvent(PUNBB.fancy_tracker.init_viewtopic);
 }
-
