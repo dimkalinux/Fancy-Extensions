@@ -55,6 +55,63 @@ $lang_fancy_stop_spam = array(
 	'Status error'					=> 'Can not get info from StopForumSpam server',
 	'Frequency'						=> 'Frequency',
 	'Last seen'						=> 'Last seen',
-);
 
-?>
+	'Admin section antispam'			=> 'AntiSpam',
+	'Admin submenu information'			=> 'Information',
+	'Admin submenu information header'	=> 'Welcome to Fancy stop spam administration control panel',
+
+	'Admin submenu logs'				=> 'Logs',
+	'Admin submenu logs header'			=> 'Detected spam events',
+
+	'Admin submenu new users'			=> 'New users',
+	'Admin submenu new users header'	=> 'Latest 15 registered users',
+
+	'Admin submenu suspicious users'		=> 'Suspicious users',
+	'Admin submenu suspicious users header'	=> 'Suspicious users',
+
+	'Admin logs disabled message'			=> 'Fancy stop spam logging disabled %s.',
+	'Admin logs disabled message settings'	=> 'in Settings',
+	'Admin logs empty message'				=> '',
+
+	'log event name unknown'				=> 'Unknown',
+	'log event name 1'						=> 'Register submit',
+	'log event name 2'						=> 'Register timeout',
+	'log event name 3'						=> 'Register timezone',
+	'log event name 4'						=> 'Register honeypot',
+	'log event name 5'						=> 'Register honeypot empty',
+	'log event name 6'						=> 'Register email SFS',
+	'log event name 7'						=> 'Register email SFS (cached)',
+	'log event name 8'						=> 'Register email SFS IP (cached)',
+	'log event name 9'						=> 'Register IP SFS',
+	'log event name 10'						=> 'Register IP SFS (cached)',
+
+	'log event name 70'						=> 'Activate submit',
+	'log event name 71'						=> 'Activate honeypot',
+	'log event name 72'						=> 'Activate honeypot empty',
+
+	'log event name 20'						=> 'Post submit',
+	'log event name 21'						=> 'Post timeout',
+	'log event name 22'						=> 'Post honeypot',
+	'log event name 23'						=> 'Post honeypot empty',
+
+	'log event name 30'						=> 'Identical message post',
+
+	'log event name 40'						=> 'Login honeypot',
+	'log event name 41'						=> 'Login honeypot empty',
+
+	'log event name 60'						=> 'Signature hidden',
+
+	'Time'									=> 'Time',
+	'IP'									=> 'IP',
+	'Comment'								=> 'Comment',
+	'Type'									=> 'Type',
+	'User'									=> 'User',
+
+	'No activity'							=> 'No SPAM activity logged.',
+	'No suspicious_users'					=> 'No suspicious users founded.',
+
+	'Number posts'							=> 'Posts',
+
+	'Email check'							=> 'Email check',
+	'IP check'							=> 'IP check',
+);
