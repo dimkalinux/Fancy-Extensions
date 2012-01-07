@@ -7,12 +7,11 @@
 	<title>Fancy gravatar</title>
 	<description>A PunBB extension that fetch gravatar for new users.</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>1.0.5</version>
-
+	<version>1.2</version>
 
 	<!-- -->
 	<minversion>1.4</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 
 	<!-- -->
@@ -20,85 +19,38 @@
 
 		<!-- Fetch Gravatar on register -->
 		<hook id="rg_register_pre_login_redirect"><![CDATA[
-			$fancy_gravatar_dimensions = min($forum_config['o_avatars_width'], $forum_config['o_avatars_height'], 80);
-			$fancy_gravatar_link = sprintf('http://www.gravatar.com/avatar/%s?size=%s&d=404', md5($email1), $fancy_gravatar_dimensions);
-			$fancy_gravatar_data = get_remote_file($fancy_gravatar_link, 15, false, 2);
+			if ($forum_config['o_regs_verify'] == '0') {
+				include $ext_info['path'].'/fancy_gravatar.inc.php';
 
-			if (!empty($fancy_gravatar_data) && !empty($fancy_gravatar_data['content'])) {
-				$fancy_gravatar_tmpfname = tempnam("/tmp", "GRAVATAR-".md5($email1));
-				$fancy_gravatar_handle = @/**/fopen($fancy_gravatar_tmpfname, "w");
-
-				if ($fancy_gravatar_handle !== FALSE) {
-					fwrite($fancy_gravatar_handle, $fancy_gravatar_data['content']);
-					fclose($fancy_gravatar_handle);
-
-					do {
-						list($fancy_gravatar_width, $fancy_gravatar_height, $fancy_gravatar_type,) = @/**/getimagesize($fancy_gravatar_tmpfname);
-
-						if (!in_array($fancy_gravatar_type, array(IMAGETYPE_JPEG, IMAGETYPE_PNG))) {
-							break;
-						}
-
-						if (filesize($fancy_gravatar_tmpfname) > $forum_config['o_avatars_size']) {
-							break;
-						}
-
-						// Determine type
-						$fancy_gravatar_extension = null;
-						$fancy_gravatar_avatar_type = FORUM_AVATAR_NONE;
-						if ($fancy_gravatar_type == IMAGETYPE_JPEG) {
-							$fancy_gravatar_extension = '.jpg';
-							$fancy_gravatar_avatar_type = FORUM_AVATAR_JPG;
-						} else if ($fancy_gravatar_type == IMAGETYPE_PNG) {
-							$fancy_gravatar_extension = '.png';
-						   	$fancy_gravatar_avatar_type = FORUM_AVATAR_PNG;
-						} else {
-							break;
-						}
-
-						// Avatar filenames in avatar directory
-						$fancy_gravatar_avatar_tmp_name = $forum_config['o_avatars_dir'].'/'.$new_uid.'.tmp';
-						$fancy_gravatar_avatar_name = $forum_config['o_avatars_dir'].'/'.$new_uid.$fancy_gravatar_extension;
-
-						// Move the file to the avatar directory. We do this before checking the width/height to circumvent open_basedir restrictions.
-						if (!@/**/rename($fancy_gravatar_tmpfname, $fancy_gravatar_avatar_tmp_name)) {
-							break;
-						}
-
-						if (empty($fancy_gravatar_width) ||
-							empty($fancy_gravatar_height) ||
-							$fancy_gravatar_width > $forum_config['o_avatars_width'] ||
-							$fancy_gravatar_height > $forum_config['o_avatars_height']) {
-								@/**/unlink($fancy_gravatar_avatar_tmp_name);
-								break;
-						}
-
-						// Delete any old avatars
-						delete_avatar($new_uid);
-
-						// Put the new avatar in its place
-						@/**/rename($fancy_gravatar_avatar_tmp_name, $fancy_gravatar_avatar_name);
-						@/**/chmod($fancy_gravatar_avatar_name, 0644);
-
-						// Avatar
-						$fancy_gravatar_avatar_width = (intval($fancy_gravatar_width) > 0) ? intval($fancy_gravatar_width) : 0;
-						$fancy_gravatar_avatar_height = (intval($fancy_gravatar_height) > 0) ? intval($fancy_gravatar_height) : 0;
-
-						// Save to DB
-						$fancy_gravatar_query = array(
-							'UPDATE'	=> 'users',
-							'SET'		=> 'avatar=\''.$fancy_gravatar_avatar_type.'\', avatar_height=\''.$fancy_gravatar_avatar_width.'\', avatar_width=\''.$fancy_gravatar_avatar_height.'\'',
-							'WHERE'		=> 'id='.$new_uid
-						);
-						$forum_db->query_build($fancy_gravatar_query) or error(__FILE__, __LINE__);
-					} while(FALSE);
-				}
-
-				if (isset($fancy_gravatar_tmpfname) && file_exists($fancy_gravatar_tmpfname)) {
-					unlink($fancy_gravatar_tmpfname);
-				}
+				try {
+					$fancy_gravatar = new Fancy_gravatar($new_uid, $email1);
+					$fancy_gravatar->fetch_gravatar();
+				} catch (Exception $exception) {}
 			}
 		]]></hook>
 
+
+		<!-- Fetch Gravatar on first login after verify be email -->
+		<hook id="li_login_pre_redirect"><![CDATA[
+			if ($group_id == FORUM_UNVERIFIED) {
+				// Get user email
+				$fancy_gravatar_query = array(
+					'SELECT'	=> 'u.email',
+					'FROM'		=> 'users AS u',
+					'WHERE'		=> 'u.id='.$user_id
+				);
+				$fancy_gravatar_query_result = $forum_db->query_build($fancy_gravatar_query) or error(__FILE__, __LINE__);
+				$fancy_gravatar_user_email = $forum_db->result($fancy_gravatar_query_result);
+
+				if (!empty($fancy_gravatar_user_email)) {
+					include $ext_info['path'].'/fancy_gravatar.inc.php';
+
+					try {
+						$fancy_gravatar = new Fancy_gravatar($user_id, $fancy_gravatar_user_email);
+						$fancy_gravatar->fetch_gravatar();
+					} catch (Exception $exception) {}
+				}
+			}
+		]]></hook>
 	</hooks>
 </extension>
