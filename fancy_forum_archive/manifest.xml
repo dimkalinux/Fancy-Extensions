@@ -4,12 +4,12 @@
 <extension engine="1.0">
 	<id>fancy_forum_archive</id>
 	<title>Forum Archive</title>
-	<version>0.3.9</version>
+	<version>0.3.10</version>
 	<description>Add ability to move forums from main page to archive page.</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 
 	<install><![CDATA[

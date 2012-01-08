@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>fancy_stat_counters</id>
 	<title>Fancy Stat Counter</title>
-	<version>0.3.2</version>
+	<version>0.3.3</version>
 	<description>Popular statistic counters</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 
 	<!-- -->

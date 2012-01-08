@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>fancy_image</id>
 	<title>Fancy Image</title>
-	<version>0.9.5</version>
+	<version>0.9.6</version>
 	<description>Show image from image hostings in fancybox</description>
 	<author>dimkalinux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 	<dependencies>
 		<dependency>fancy_jquery_addons</dependency>

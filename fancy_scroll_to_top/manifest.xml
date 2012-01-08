@@ -7,12 +7,12 @@
 	<title>Fancy Scroll To Top</title>
 	<description>A PunBB extension that allows scroll to top page.</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.3.1</version>
+	<version>0.3.2</version>
 
 
 	<!-- -->
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4.1</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 	<dependencies>
 		<dependency>pun_jquery</dependency>

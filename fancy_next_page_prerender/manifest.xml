@@ -7,11 +7,11 @@
 	<title>Fancy Next Page Prerender</title>
 	<description>A PunBB extension that </description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.1</version>
+	<version>0.2</version>
 
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 	<hooks>
 

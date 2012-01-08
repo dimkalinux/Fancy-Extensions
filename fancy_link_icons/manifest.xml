@@ -7,11 +7,11 @@
 	<title>Fancy Link Icons</title>
 	<description>A PunBB extension that add icons for some site links</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.3</version>
+	<version>0.3.1</version>
 
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 	<hooks>
 

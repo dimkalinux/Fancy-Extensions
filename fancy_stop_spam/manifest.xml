@@ -5,12 +5,12 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.22</version>
+	<version>1.3.23</version>
 	<description>Enlarge? No, thanks!</description>
 	<author>dimka.linux@gmail.com</author>
 
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4.1</maxtestedon>
+	<maxtestedon>1.4.2</maxtestedon>
 
 
 	<install><![CDATA[
