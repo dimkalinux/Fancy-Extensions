@@ -11,6 +11,7 @@ $lang_fancy_addthis = array(
 
 	'Enable G+ button label'		=> 'Гугл+',
 	'Enable Twitter button label'	=> 'Твитер',
+    'Enable Facebook button label'  => 'Фейсбук',
 );
 
 ?>

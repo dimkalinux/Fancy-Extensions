@@ -5,18 +5,17 @@
 <extension engine="1.0">
 	<id>fancy_addthis</id>
 	<title>Fancy AddThis</title>
-	<description>A PunBB extension that added AddThis widget</description>
+	<description>AddThis widget with Facebook, Twitter and Google+ buttons</description>
 	<author>dimka.linux@gmail.com</author>
-	<version>0.7.7</version>
+	<version>0.8</version>
 
 
 	<!-- -->
 	<minversion>1.4RC1</minversion>
-	<maxtestedon>1.4.2</maxtestedon>
+	<maxtestedon>1.4.3</maxtestedon>
 
 
 	<install><![CDATA[
-		// Add extension options to the config table
 		forum_config_add('o_fancy_addthis_button_gplus', '0');
 		forum_config_add('o_fancy_addthis_button_twitter', '0');
 		forum_config_add('o_fancy_addthis_button_facebook', '0');
@@ -45,18 +44,25 @@
 			}
 
 			// CSS for disabled JS hide bar
-			$forum_loader->add_css('#fancy_addthis_topic_toolbox, .fancy-addthis-post { display: none; }', array('type' => 'inline', 'noscript' => true));
+			$forum_loader->add_css('#fancy_addthis_topic_toolbox, .fancy-addthis-post { display: none; }',
+				array('type' => 'inline', 'noscript' => true));
+
 			$forum_loader->add_css('
-				#fancy_addthis_topic_toolbox { min-height: 30px; margin: .75em 0 0; }
+				#fancy_addthis_topic_toolbox { min-height: 30px; margin: .75em 0 0; height: 30px; overflow: hidden; }
 				#fancy_addthis_topic_toolbox table { float: right; width: auto; }
-				#fancy_addthis_topic_toolbox td { border: none; padding: .2em; }', array('type' => 'inline'));
+				#fancy_addthis_topic_toolbox td { border: none; padding: .2em; height: 30px; vertical-align: bottom; }
+				#fancy_addthis_topic_toolbox .addthis_button_tweet { cursor:pointer; min-width:50px; display:inline-block; }
+				#fancy_addthis_topic_toolbox .addthis_button_facebook_like { width:46px; overflow:hidden; display:inline-block; }
+				#fancy_addthis_topic_toolbox .addthis_button_google_plusone { min-width:25px; position:relative; display:inline-block; }
+				#fancy_addthis_topic_toolbox td > a { height: 28px; }',
+				array('type' => 'inline'));
 
 			$forum_loader->add_js('//s7.addthis.com/js/250/addthis_widget.js#domready=1', array('weight' => 250));
 
 			$fancy_addthis_js_env = '
 				PUNBB.env.fancy_addthis = {
 					show_onclick: "",
-					pubid: "",
+					pubid: ""
 				};';
 
 
@@ -67,7 +73,12 @@
 
 		<!-- -->
 		<hook id="vt_row_pre_post_actions_merge" priority="7"><![CDATA[
-			$forum_page['post_actions']['fancy_addthis_code'] = '<span class="fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'"><span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.$lang_fancy_addthis['Share'].'</span></span>';
+			$forum_page['post_actions']['fancy_addthis_code'] = '
+				<span class="fancy-addthis-post'.(empty($forum_page['post_actions']) ? ' first-item' : '').'">
+					<span class="fancy-addthis-link" data-share-url="'.forum_link($forum_url['post'], $cur_post['id']).'">'.
+						$lang_fancy_addthis['Share'].'
+					</span>
+				</span>';
 		]]></hook>
 
 
@@ -82,14 +93,18 @@
 						<div id="fancy_addthis_topic_toolbox">
 							<table cellspacing="0" cellpadding="0" class="addthis_toolbox addthis_default_style" addthis:url="'.forum_link($forum_url['topic'], array($id, sef_friendly($cur_topic['subject']))).'" addthis:title="'.forum_htmlencode($cur_topic['subject']).'">
 							<tbody>
-								<tr valign="top">';
+								<tr valign="bottom">';
+
+					if ($forum_config['o_fancy_addthis_button_facebook'] == '1'):
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_facebook_like" fb:like:locale="en_US"></a></td>';
+					endif;
 
 					if ($forum_config['o_fancy_addthis_button_twitter'] == '1'):
-						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_tweet" tw:count="none" style="cursor:pointer;min-width:50px;display:inline-block"></a></td>';
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_tweet" tw:count="none"></a></td>';
 					endif;
 
 					if ($forum_config['o_fancy_addthis_button_gplus'] == '1'):
-						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_google_plusone" g:plusone:count="false" g:plusone:size="medium" style="min-width:25px;position:relative;display:inline-block;"/></td>';
+						$forum_page['message']['fancy_addthis_topic_block'] .= '<td><a class="addthis_button_google_plusone" g:plusone:count="false" g:plusone:size="medium"></a></td>';
 					endif;
 
 					$forum_page['message']['fancy_addthis_topic_block'] .= '
@@ -111,7 +126,6 @@
 					require $ext_info['path'].'/lang/English/lang.php';
 				}
 			}
-
 
 			if ($ext['id'] == 'fancy_addthis' && !isset($forum_page['ext_actions']['fancy_addthis_settings'])) {
 				$forum_page['ext_actions']['fancy_addthis_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$lang_fancy_addthis['Go to settings'].'</a></span>';
@@ -147,12 +161,41 @@
 						<legend><span><?php echo $lang_fancy_addthis['Enable buttons'] ?></span></legend>
 						<div class="mf-box">
 							<div class="mf-item">
-								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_addthis_button_gplus]" value="1"<?php if ($forum_config['o_fancy_addthis_button_gplus'] == '1') echo ' checked="checked"'; ?> /></span>
-								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_addthis['Enable G+ button label'] ?></label>
+								<span class="fld-input">
+									<input type="checkbox"
+										id="fld<?php echo ++$forum_page['fld_count'] ?>"
+										name="form[fancy_addthis_button_gplus]" value="1"
+										<?php if ($forum_config['o_fancy_addthis_button_gplus'] == '1') echo ' checked="checked"'; ?> />
+								</span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>">
+									<?php echo $lang_fancy_addthis['Enable G+ button label'] ?>
+								</label>
 							</div>
+
 							<div class="mf-item">
-								<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="form[fancy_addthis_button_twitter]" value="1"<?php if ($forum_config['o_fancy_addthis_button_twitter'] == '1') echo ' checked="checked"'; ?> /></span>
-								<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_addthis['Enable Twitter button label'] ?></label>
+								<span class="fld-input">
+									<input
+										type="checkbox"
+										id="fld<?php echo ++$forum_page['fld_count'] ?>"
+										name="form[fancy_addthis_button_twitter]" value="1"
+										<?php if ($forum_config['o_fancy_addthis_button_twitter'] == '1') echo ' checked="checked"'; ?> />
+								</span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>">
+									<?php echo $lang_fancy_addthis['Enable Twitter button label'] ?>
+								</label>
+							</div>
+
+							<div class="mf-item">
+								<span class="fld-input">
+									<input
+										type="checkbox"
+										id="fld<?php echo ++$forum_page['fld_count'] ?>"
+										name="form[fancy_addthis_button_facebook]" value="1"
+										<?php if ($forum_config['o_fancy_addthis_button_facebook'] == '1') echo ' checked="checked"'; ?> />
+								</span>
+								<label for="fld<?php echo $forum_page['fld_count'] ?>">
+									<?php echo $lang_fancy_addthis['Enable Facebook button label'] ?>
+								</label>
 							</div>
 						</div>
 					</fieldset>
