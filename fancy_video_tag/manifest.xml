@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_video_tag</id>
 	<title>Fancy Video Tag</title>
-	<version>0.4.10</version>
+	<version>0.4.11</version>
 	<description>New BBcode tag ([video]) to display embedded videos.</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -22,29 +22,25 @@
 
 
 	<hooks>
-		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
+		<hook id="co_common" priority="7"><![CDATA[
 			if (!isset($fancy_video_tag)) {
-				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
+				if ($forum_user['language'] != 'English'
+					&& file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')
+				) {
 					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
 				} else {
 					require $ext_info['path'].'/lang/English/lang.php';
 				}
 			}
+		]]></hook>
 
+		<hook id="aex_section_manage_pre_ext_actions" priority="7"><![CDATA[
 			if ($ext['id'] == 'fancy_video_tag' && !isset($forum_page['ext_actions']['fancy_video_tag_settings'])) {
 				$forum_page['ext_actions']['fancy_video_tag_settings'] = '<span><a href="'.forum_link($forum_url['admin_settings_features']).'#'.$ext_info['id'].'_settings'.'">'.$fancy_video_tag['Go to settings'].'</a></span>';
 			}
 		]]></hook>
 
 		<hook id="aop_features_gzip_fieldset_end"><![CDATA[
-			if (!isset($fancy_video_tag)) {
-				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
-					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
-				} else {
-					require $ext_info['path'].'/lang/English/lang.php';
-				}
-			}
-
 			$forum_page['group_count'] = 0;
 			?>
 				<div class="content-head" id="<?php echo $ext_info['id'].'_settings'; ?>">
@@ -68,13 +64,6 @@
 
 
 		<hook id="he_new_bbcode_link"><![CDATA[
-			if (!isset($fancy_video_tag)) {
-				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
-					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
-				} else {
-					require $ext_info['path'].'/lang/English/lang.php';
-				}
-			}
 			$lang_help = array_merge($lang_help, $fancy_video_tag);
 ?>
 			<div class="entry-content">
@@ -86,15 +75,6 @@
 
 
 		<hook id="ps_start"><![CDATA[
-			if (!isset($fancy_video_tag)) {
-				if ($forum_user['language'] != 'English' && file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')) {
-					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
-				} else {
-					require $ext_info['path'].'/lang/English/lang.php';
-				}
-			}
-
-			// tag handling function
 			function fancy_video_tag_parse($videoUri) {
 				global $forum_config, $fancy_video_tag;
 
