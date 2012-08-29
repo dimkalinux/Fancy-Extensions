@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_tracker</id>
 	<title>Fancy Bittorrent Tracker</title>
-	<version>0.9.29</version>
+	<version>0.9.31</version>
 	<description>Simple Bittorrent tracker.</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -396,6 +396,10 @@
 		      		}
 
 		      		$size = $torrent['info']['length'];
+		      	}
+
+		      	if (isset($data['url-list'])) {
+		      		$torrent['url-list'] = $data['url-list'];
 		      	}
 
 		      	unset($data);
