@@ -5,7 +5,7 @@ if (!defined('FORUM_ROOT'))
 require FORUM_ROOT.'include/common.php';
 require FORUM_ROOT.'include/common_admin.php';
 
-if ($forum_user['g_id'] != FORUM_ADMIN)
+if (!$forum_user['is_admmod'])
     message($lang_common['No permission']);
 
 // Load the admin.php language file
