@@ -2,7 +2,7 @@
 
 class Fancy_stop_spam {
     // CONFIGS
-    const NUMBER_POSTS_FOR_SIGNATURE            = 4;
+    const NUMBER_POSTS_FOR_SIGNATURE            = 3;
 
     // CONFIGS IDENTICAL
     const IDENTICAL_POST_LIFETIME               = 10800;
@@ -14,14 +14,18 @@ class Fancy_stop_spam {
     const LIFETIME_SFS_IP_CACHED                = 259200;
     const LIFETIME_SFS_EMAIL_CACHED             = 259200;
     const LIFETIME_SFS_IP_ACTIVITY              = 15552000;     // 180 days
-    const LIFETIME_SFS_IP_1_FREQ_ACTIVITY       = 864000;       // 10 days
+    const LIFETIME_SFS_IP_1_FREQ_ACTIVITY       = 432000;       // 5 days
+
+    //
+    const TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK   = 3600;
 
     //
     const FORM_FILL_MIN_TIME                    = 3;
     const SUBMIT_MARK                           = ' ';
 
-    const NUMBER_LOGS_FOR_SAVE                  = 1000;
+    const NUMBER_LOGS_FOR_SAVE                  = 5000;
 
+    const LOG_SYSTEM_EVENT                  = 0;
 
     // LOGS EVENTS REGISTER
     const LOG_REGISTER_SUBMIT               = 1;
@@ -29,6 +33,7 @@ class Fancy_stop_spam {
     const LOG_REGISTER_TIMEZONE             = 3;
     const LOG_REGISTER_HONEYPOT             = 4;
     const LOG_REGISTER_HONEYPOT_EMPTY       = 5;
+    const LOG_REGISTER_HONEYPOT_REPEATED    = 11;
     const LOG_REGISTER_EMAIL_SFS            = 6;
     const LOG_REGISTER_EMAIL_SFS_CACHED     = 7;
     const LOG_REGISTER_EMAIL_SFS_IP_CACHED  = 8;
@@ -91,7 +96,7 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // Log spam event to database
     public function log($activity_type, $user_id, $user_ip, $comment='') {
         global $forum_db, $forum_config;
 
@@ -132,8 +137,12 @@ class Fancy_stop_spam {
         $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
         $num_identical_messages = $forum_db->result($result, 0);
 
+        // Check repeated
+        //$this->check_identical_posts_repeated(intval($poster_id, 10));
+
         return (bool)/**/($num_identical_messages > 0);
     }
+
 
     //
     function identical_message_add($poster_id, $post_id, $message_hash, $posted) {
@@ -166,6 +175,49 @@ class Fancy_stop_spam {
                 'WHERE'     => 'id = '.$user_id
             );
             $forum_db->query_build($query) or error(__FILE__, __LINE__);
+        }
+    }
+
+
+    //
+    public function check_register_honeypot_repeated($ip) {
+        global $forum_db;
+
+        if (empty($ip)) {
+            return FALSE;
+        }
+
+        $query = array(
+            'SELECT'    => 'COUNT(ip)',
+            'FROM'      => 'fancy_stop_spam_logs',
+            'WHERE'     => 'ip=\''.$forum_db->escape($this->ip2long($ip)).'\' AND
+                            activity_type=\''.$forum_db->escape(self::LOG_REGISTER_HONEYPOT).'\' AND
+                            activity_time > '.(time() - self::TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK)
+        );
+        $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+        return (bool)/**/($forum_db->result($result) > 4);
+    }
+
+
+    //
+    public function check_identical_posts_repeated($user_id) {
+        global $forum_db;
+
+        $user_id = intval($user_id, 10);
+
+        if ($user_id > 2) {
+            $query = array(
+                'SELECT'    => 'COUNT(ip)',
+                'FROM'      => 'fancy_stop_spam_logs',
+                'WHERE'     => 'user_id=\''.$forum_db->escape($user_id).'\' AND
+                                activity_type=\''.$forum_db->escape(self::LOG_IDENTICAL_POST).'\' AND
+                                activity_time > '.(time() - self::TIMEOUT_REGISTER_HONEYPOT_LOG_CHECK)
+            );
+            $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
+            if ($forum_db->result($result) > 2) {
+                $this->mark_user_as_spammer($user_id);
+                $this->log(self::LOG_SYSTEM_EVENT, $user_id, get_remote_address(), $this->lang['Identical check repeated event']);
+            }
         }
     }
 
@@ -207,14 +259,14 @@ class Fancy_stop_spam {
                 if (!empty($spam_data['ip']['appears']) && !empty($spam_data['ip']['frequency'])) {
                     // Check spam IP with frequency 1
                     if (intval($spam_data['ip']['frequency'], 10) === 1) {
-                        if (!empty($spam_data['ip']['lastseen']) && $spam_data['ip']['lastseen'] > (time() - LIFETIME_SFS_IP_1_FREQ_ACTIVITY)) {
+                        if (!empty($spam_data['ip']['lastseen']) && $spam_data['ip']['lastseen'] > (time() - self::LIFETIME_SFS_IP_1_FREQ_ACTIVITY)) {
                             $is_spam_ip = TRUE;
                         }
                     }
 
                     // Check spam IP with frequency > 1
                     if (intval($spam_data['ip']['frequency'], 10) > 1) {
-                        if (!empty($spam_data['ip']['lastseen']) && $spam_data['ip']['lastseen'] > (time() - LIFETIME_SFS_IP_ACTIVITY)) {
+                        if (!empty($spam_data['ip']['lastseen']) && $spam_data['ip']['lastseen'] > (time() - self::LIFETIME_SFS_IP_ACTIVITY)) {
                             $is_spam_ip = TRUE;
                         }
                     }
@@ -238,7 +290,7 @@ class Fancy_stop_spam {
             // Clear email cache
             $query = array(
                 'DELETE'    => 'fancy_stop_spam_sfs_email_cache',
-                'WHERE'     => 'added < '.(time() - LIFETIME_SFS_EMAIL_CACHED)
+                'WHERE'     => 'added < '.(time() - self::LIFETIME_SFS_EMAIL_CACHED)
             );
             $forum_db->query_build($query) or error(__FILE__, __LINE__);
 
@@ -307,11 +359,7 @@ class Fancy_stop_spam {
                 break;
             }
 
-            if ($forum_user['num_posts'] > Fancy_stop_spam::IDENTICAL_USER_MAX_POSTS_FOR_CHECK) {
-                break;
-            }
-
-            if ($forum_user['is_admmod']) {
+            if ($forum_user['is_admmod'] || ($forum_user['num_posts'] > self::IDENTICAL_USER_MAX_POSTS_FOR_CHECK)) {
                 break;
             }
 
@@ -325,7 +373,7 @@ class Fancy_stop_spam {
 
 
     // Print logs table
-    public function print_logs() {
+    public function print_logs($user_id = NULL, $ip = NULL) {
         global $forum_db, $forum_config, $forum_page, $forum_url;
 
         $out = '';
@@ -342,6 +390,16 @@ class Fancy_stop_spam {
             'ORDER BY'  => 'fl.id DESC',
             'LIMIT'     => '100'
         );
+
+        if (!is_null($user_id) && $user_id > 0) {
+            $query['WHERE'] = 'fl.user_id = \''.$forum_db->escape($user_id).'\'';
+        }
+
+        if (!is_null($ip)) {
+            $query['WHERE'] = 'fl.ip = \''.$forum_db->escape($this->ip2long($ip)).'\'';
+            $query['LIMIT'] = '20';
+        }
+
         $result = $forum_db->query_build($query) or error(__FILE__, __LINE__);
 
         $acts = array();
@@ -393,7 +451,7 @@ class Fancy_stop_spam {
             $out = $table;
         }
 
-        echo $out;
+        return $out;
     }
 
 
@@ -415,15 +473,20 @@ class Fancy_stop_spam {
 
         // Grab the users
         $query = array(
-            'SELECT'    => 'u.id, u.username, u.email, u.title, u.num_posts, u.registered, u.registration_ip, g.g_id, g.g_user_title',
+            'SELECT'    => 'u.id, u.username, u.email, u.title, u.num_posts, u.registered, u.registration_ip, g.g_id, g.g_user_title, COUNT(fssl.user_id) AS num_logs',
             'FROM'      => 'users AS u',
             'JOINS'     => array(
                 array(
                     'LEFT JOIN'     => 'groups AS g',
                     'ON'            => 'g.g_id=u.group_id'
+                ),
+                array(
+                    'LEFT JOIN'     => 'fancy_stop_spam_logs AS fssl',
+                    'ON'            => 'fssl.user_id=u.id'
                 )
             ),
             'WHERE'     => 'u.id > 1 AND u.group_id != '.FORUM_UNVERIFIED,
+            'GROUP BY'  => 'u.id',
             'ORDER BY'  => 'u.id DESC',
             'LIMIT'     => $forum_page['start_from'].', 15'
         );
@@ -467,18 +530,25 @@ class Fancy_stop_spam {
                 $email_status = $this->get_sfs_status_for_email($founded_user["email"], $fancy_stop_spam_email_data, $spam_status_email);
                 $ip_status = $this->get_sfs_status_for_ip($founded_user["registration_ip"], $fancy_stop_spam_ip_data, $spam_status_ip);
 
+                // NUMBER of POSTS
                 $num_posts_row = '0';
                 if (intval($founded_user['num_posts'], 10) > 0) {
-                    $num_posts_row = '<a href="">'.$founded_user['num_posts'].'</a>';
+                    $num_posts_row = '<a href="'.forum_link($forum_url['search_user_posts'], $founded_user['id']).'">'.$founded_user['num_posts'].'</a>';
+                }
+
+                // NUMBER of LOGS
+                $num_logs_row = '0';
+                if (intval($founded_user['num_logs'], 10) > 0) {
+                    $num_logs_row = '<a href="'.forum_link($forum_url['fancy_stop_spam_profile_section'], $founded_user['id']).'">'.$founded_user['num_logs'].'</a>';
                 }
 
                 $users_data .= '
                     <tr class="fancy_spam_status_email_'.forum_htmlencode($spam_status_email).' fancy_spam_status_ip_'.forum_htmlencode($spam_status_ip).'">
                         <td>'.$username_row.'</td>
                         <td class="number_posts">'.$num_posts_row.'</td>
+                        <td class="number_logs">'.$num_logs_row.'</td>
                         <td>'.$email_status.'</td>
                         <td>'.$ip_status.'</td>
-                        <td></td>
                     </tr>';
             }
 
@@ -488,9 +558,9 @@ class Fancy_stop_spam {
                 <tr>
                     <th class="tc0" scope="col">'.$this->lang['User'].'</th>
                     <th class="number_posts" scope="col">'.$this->lang['Number posts'].'</th>
+                    <th class="number_logs" scope="col">'.$this->lang['Admin submenu logs'].'</th>
                     <th class="tc1" scope="col">'.$this->lang['Email check'].'</th>
                     <th class="tc2" scope="col">'.$this->lang['IP check'].'</th>
-                    <th class="tc3" scope="col">'.$this->lang['Admin submenu logs'].'</th>
                 </tr>
                 </thead>
                 <tbody>'.$users_data.'</tbody>
@@ -501,13 +571,6 @@ class Fancy_stop_spam {
         }
 
         echo $out;
-    }
-
-
-    // Print admin info page
-    public function print_info() {
-
-
     }
 
 
@@ -569,9 +632,9 @@ class Fancy_stop_spam {
     }
 
 
-    // Print user email info from SFS
+    // Print user info from SFS
     public function print_user_status($user) {
-        global $lang_profile, $forum_url;
+        global $lang_profile, $forum_url, $forum_page;
 
         $fancy_stop_spam_data = $this->make_request_to_sfs(array(
             'email' => $user['email'],
@@ -621,8 +684,6 @@ class Fancy_stop_spam {
             $fancy_stop_spam_ip_info[] = '<li>'.$this->lang['Status error'].'</li>';
         }
 
-
-
         ?>
             <div class="ct-set data-set set<?php echo ++$forum_page['item_count'] ?>">
                 <div class="ct-box data-box">
@@ -651,7 +712,32 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // Send spam report to StoForumSpam
+    public function send_spam_data_to_sfs($username, $email, $ip) {
+        global $forum_config, $lang_common;
+
+        if (empty($forum_config['o_fancy_stop_spam_sfs_api_key'])) {
+            return FALSE;
+        }
+
+        // Construct report data
+        $data = array(
+            'username'  => $username,
+            'ip_addr'   => $ip,
+            'api_key'   => $forum_config['o_fancy_stop_spam_sfs_api_key']
+        );
+
+        // Report only verified emails
+        if ($forum_config['o_regs_verify'] == '1') {
+            $data['email'] = $email;
+        }
+
+        $report_url = 'http://www.stopforumspam.com/add.php?'.http_build_query($data);
+        get_remote_file($report_url, 15, FALSE, 2);
+    }
+
+
+    // Send spam check request to StoForumSpam
     private function make_request_to_sfs($data = array()) {
         $result = FALSE;
 
@@ -690,7 +776,7 @@ class Fancy_stop_spam {
     private function clear_old_logs() {
         global $forum_db;
 
-        if ($this->get_num_logs() > (self::NUMBER_LOGS_FOR_SAVE + 50)) {
+        if ($this->get_num_logs() > (self::NUMBER_LOGS_FOR_SAVE + 100)) {
             $max_old_id = $this->get_last_old_id_logs();
 
             // DEL OLDEST
@@ -705,7 +791,7 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // Return number entries in logs table
     private function get_num_logs() {
         global $forum_db;
 
@@ -719,7 +805,7 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // Return oldest log entries id
     private function get_last_old_id_logs() {
         global $forum_db;
 
@@ -735,7 +821,7 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // Convert IP-address to long integer
     private function ip2long($ip) {
         return sprintf('%u', ip2long($ip));
     }
@@ -765,7 +851,7 @@ class Fancy_stop_spam {
     private function identical_message_prune_expired() {
         global $forum_db;
 
-        // REMOVE EXPIRED - 3 HOUR
+        // REMOVE EXPIRED
         $query = array(
             'DELETE'    => 'fancy_stop_spam_identical_posts',
             'WHERE'     => 'posted < '.(time() - self::IDENTICAL_POST_LIFETIME)
@@ -774,7 +860,7 @@ class Fancy_stop_spam {
     }
 
 
-    //
+    // return number links in post
     private function get_number_links_in_message($post_message) {
         $num_links_http = $num_links_www = 0;
 
@@ -804,7 +890,7 @@ class Fancy_stop_spam {
                         $status = $this->lang['Last seen'].': '.forum_htmlencode(format_time($sfs_email_data['lastseen']));
 
                         if (!empty($sfs_email_data['frequency'])) {
-                            $status .= '&nbsp;('.intval($sfs_email_data['frequency'], 10).')';
+                            $status .= '<span title="'.$this->lang['Frequency'].'">&nbsp;('.intval($sfs_email_data['frequency'], 10).')</span>';
                         }
                     }
                 }
@@ -826,12 +912,11 @@ class Fancy_stop_spam {
             if ($ip === $sfs_data['value']) {
                 if (!empty($sfs_data['appears'])) {
                     $spam_status = self::STATUS_SPAM;
-                    // $status[] = '<li>'.$this->lang['Status found'].'</li>';
                     if (!empty($sfs_data['lastseen'])) {
                         $status = $this->lang['Last seen'].': '.forum_htmlencode(format_time($sfs_data['lastseen']));
 
                         if (!empty($sfs_data['frequency'])) {
-                            $status .= '&nbsp;('.intval($sfs_data['frequency'], 10).')';
+                            $status .= '<span title="'.$this->lang['Frequency'].'">&nbsp;('.intval($sfs_data['frequency'], 10).')</span>';
                         }
                     }
                 }
@@ -842,3 +927,9 @@ class Fancy_stop_spam {
         return $status;
     }
 }
+
+/*
+class TypePadAnitiSpam {
+    const
+
+}*/

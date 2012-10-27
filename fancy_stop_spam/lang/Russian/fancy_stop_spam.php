@@ -55,6 +55,73 @@ $lang_fancy_stop_spam = array(
 	'Status error'					=> 'Не удалось получить данные от сервера StopForumSpam',
 	'Frequency'						=> 'Частота',
 	'Last seen'						=> 'Активность',
+
+	'Admin section antispam'			=> 'Антиспам',
+	'Admin submenu information'			=> 'Информация',
+	'Admin submenu information header'	=> 'Добро пожаловать в панель управления Fancy stop spam',
+
+	'Admin submenu logs'				=> 'Логи',
+	'Admin submenu logs header'			=> 'Detected spam events (latest 100)',
+
+	'Admin submenu new users'			=> 'Новые пользователи',
+	'Admin submenu new users header'	=> '15 последних зарегистрированных пользователей',
+
+	'Admin submenu suspicious users'		=> 'Подозрительные пользователи',
+	'Admin submenu suspicious users header'	=> 'Подозрительные пользователи',
+
+	'Admin logs disabled message'			=> 'Fancy stop spam логирование отключено %s.',
+	'Admin logs disabled message settings'	=> 'в Настройках',
+	'Admin logs empty message'				=> '',
+
+	'log event name unknown'				=> 'Unknown',
+	'log event name 0'						=> 'Системное сообщение',
+	'log event name 1'						=> 'Register submit',
+	'log event name 2'						=> 'Register timeout',
+	'log event name 3'						=> 'Register timezone',
+	'log event name 4'						=> 'Register honeypot',
+	'log event name 5'						=> 'Register honeypot empty',
+	'log event name 6'						=> 'Register email SFS',
+	'log event name 7'						=> 'Register email SFS (cached)',
+	'log event name 8'						=> 'Register email SFS IP (cached)',
+	'log event name 9'						=> 'Register IP SFS',
+	'log event name 10'						=> 'Register IP SFS (cached)',
+	'log event name 11'						=> 'Register honeypot repeated',
+
+	'log event name 70'						=> 'Activate submit',
+	'log event name 71'						=> 'Activate honeypot',
+	'log event name 72'						=> 'Activate honeypot empty',
+
+	'log event name 20'						=> 'Post submit',
+	'log event name 21'						=> 'Post timeout',
+	'log event name 22'						=> 'Post honeypot',
+	'log event name 23'						=> 'Post honeypot empty',
+
+	'log event name 30'						=> 'Identical message post',
+
+	'log event name 40'						=> 'Login honeypot',
+	'log event name 41'						=> 'Login honeypot empty',
+
+	'log event name 60'						=> 'Signature hidden',
+
+	'Time'									=> 'Дата',
+	'IP'									=> 'IP',
+	'Comment'								=> 'Коментарий',
+	'Type'									=> 'Тип',
+	'User'									=> 'Пользователь',
+
+	'No activity'							=> 'No SPAM activity logged.',
+	'No suspicious_users'					=> 'No suspicious users founded.',
+
+	'Number posts'							=> 'Сообщений',
+
+	'Email check'							=> 'Проверка эл. почты',
+	'IP check'								=> 'IP проверка',
+
+	'SFS API Key'							=> 'API ключ',
+	'SFS API Key Help'						=> 'StopForumSpam API ключ for report spamers',
+	'Report to sfs'							=> 'Отправить отчет о спамере в сервис StopForumSpam',
+
+	'Identical check repeated event'		=> 'Identical repeated - user mark as suspicious',
 );
 
 ?>

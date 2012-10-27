@@ -30,16 +30,16 @@ $lang_fancy_stop_spam = array(
 	'Enable SFS Email'				=> 'Check email by StopForumSpam',
 	'Enable SFS IP'					=> 'Check IP by StopForumSpam',
 
-	'Register bot message'			=> 'Sorry, but we think you are bot. You cant register on this forum.',
+	'Register bot message'			=> 'Sorry, but we think you are bot. You can not register on this forum.',
 	'Register bot timeout message'	=> 'Sorry, but we think you are bot because you are fill this form too fast. Wait a few seconds and try to submit again.',
 	'Register bot timezone message'	=> 'Sorry, but we think you are bot because you are select timezone UTC−12:00. No human habitations are in this time zone. Select other timezone.',
-	'Register bot sfs email message'	=> 'Sorry, but your email identified as spam. You cant register on this forum.',
+	'Register bot sfs email message'	=> 'Sorry, but your email identified as spam. You can not register on this forum.',
 	'Register bot sfs email ip message'	=> 'A spammer was try registered with the same IP address as you within the last hour. To prevent registration flooding, at least an hour has to pass between registrations from the same IP. Sorry for the inconvenience.',
-	'Register bot sfs ip message'	=> 'Sorry, but your ip-address identified as spammers. You cant register on this forum.',
-	'Login bot message'				=> 'Sorry, but we think you are bot. You cant login on this forum.',
-	'Post bot message'				=> 'Sorry, but we think you are bot. You cant post message on this forum.',
-	'Post Identical message'		=> 'Sorry, but you cant post identical messages. Modify message and post it again.',
-	'Activate bot message'			=> 'Sorry, but we think you are bot. You cant activate account on this forum.',
+	'Register bot sfs ip message'	=> 'Sorry, but your ip-address identified as spammers. You can not register on this forum.',
+	'Login bot message'				=> 'Sorry, but we think you are bot. You can not login on this forum.',
+	'Post bot message'				=> 'Sorry, but we think you are bot. You can not post message on this forum.',
+	'Post Identical message'		=> 'Sorry, but you can not post identical messages. Modify message and post it again.',
+	'Activate bot message'			=> 'Sorry, but we think you are bot. You can not activate account on this forum.',
 
 	'Honey field'					=> 'Anti SPAM',
 	'Honey field help'				=> 'Leave this field empty',
@@ -56,12 +56,12 @@ $lang_fancy_stop_spam = array(
 	'Frequency'						=> 'Frequency',
 	'Last seen'						=> 'Last seen',
 
-	'Admin section antispam'			=> 'AntiSpam',
+	'Admin section antispam'			=> 'Antispam',
 	'Admin submenu information'			=> 'Information',
 	'Admin submenu information header'	=> 'Welcome to Fancy stop spam administration control panel',
 
 	'Admin submenu logs'				=> 'Logs',
-	'Admin submenu logs header'			=> 'Detected spam events',
+	'Admin submenu logs header'			=> 'Detected spam events (latest 100)',
 
 	'Admin submenu new users'			=> 'New users',
 	'Admin submenu new users header'	=> 'Latest 15 registered users',
@@ -74,6 +74,7 @@ $lang_fancy_stop_spam = array(
 	'Admin logs empty message'				=> '',
 
 	'log event name unknown'				=> 'Unknown',
+	'log event name 0'						=> 'System message',
 	'log event name 1'						=> 'Register submit',
 	'log event name 2'						=> 'Register timeout',
 	'log event name 3'						=> 'Register timezone',
@@ -84,6 +85,7 @@ $lang_fancy_stop_spam = array(
 	'log event name 8'						=> 'Register email SFS IP (cached)',
 	'log event name 9'						=> 'Register IP SFS',
 	'log event name 10'						=> 'Register IP SFS (cached)',
+	'log event name 11'						=> 'Register honeypot repeated',
 
 	'log event name 70'						=> 'Activate submit',
 	'log event name 71'						=> 'Activate honeypot',
@@ -113,5 +115,11 @@ $lang_fancy_stop_spam = array(
 	'Number posts'							=> 'Posts',
 
 	'Email check'							=> 'Email check',
-	'IP check'							=> 'IP check',
+	'IP check'								=> 'IP check',
+
+	'SFS API Key'							=> 'API key',
+	'SFS API Key Help'						=> 'StopForumSpam API key for report spamers',
+	'Report to sfs'							=> 'Report spamers data to StopForumSpam service',
+
+	'Identical check repeated event'		=> 'Identical repeated - user mark as suspicious',
 );

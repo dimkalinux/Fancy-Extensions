@@ -7,7 +7,8 @@
 	background: #FFEDED !important;
 }
 
-.fancy_stop_spam_table .number_posts {
+.fancy_stop_spam_table .number_posts,
+.fancy_stop_spam_table .number_logs {
 	text-align: center;
 	width: 10%;
 }

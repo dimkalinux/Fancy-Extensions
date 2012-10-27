@@ -5,11 +5,11 @@
 <extension engine="1.0">
 	<id>fancy_stop_spam</id>
 	<title>Fancy Stop SPAM</title>
-	<version>1.3.23</version>
-	<description>Enlarge? No, thanks!</description>
+	<version>1.3.52</version>
+	<description>Antispam system for PunBB 1.4</description>
 	<author>dimka.linux@gmail.com</author>
 
-	<minversion>1.4RC1</minversion>
+	<minversion>1.4</minversion>
 	<maxtestedon>1.4.2</maxtestedon>
 
 
@@ -30,6 +30,7 @@
 		forum_config_add('o_fancy_stop_spam_check_signature', '0');
 		forum_config_add('o_fancy_stop_spam_check_submit', '1');
 		forum_config_add('o_fancy_stop_spam_use_logs', '1');
+		forum_config_add('o_fancy_stop_spam_sfs_api_key', '');
 
 
 		if (!$forum_db->table_exists('fancy_stop_spam_identical_posts'))
@@ -168,7 +169,8 @@
 			'o_fancy_stop_spam_max_links',
 			'o_fancy_stop_spam_max_guest_links',
 			'o_fancy_stop_spam_register_form_sfs_email',
-			'o_fancy_stop_spam_register_form_sfs_ip'
+			'o_fancy_stop_spam_register_form_sfs_ip',
+			'o_fancy_stop_spam_sfs_api_key'
 		));
 
 		$forum_db->drop_table('fancy_stop_spam_identical_posts');
@@ -299,6 +301,14 @@
 							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_stop_spam_max_guest_links]" size="3" maxlength="3" value="<?php echo forum_htmlencode($forum_config['o_fancy_stop_spam_max_guest_links']) ?>" /></span>
 						</div>
 					</div>
+
+					<!-- SFS API KEY -->
+					<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+						<div class="sf-box text">
+							<label for="fld<?php echo ++$forum_page['fld_count'] ?>"><span><?php echo $lang_fancy_stop_spam['SFS API Key'] ?></span><small><?php echo $lang_fancy_stop_spam['SFS API Key Help'] ?></small></label><br />
+							<span class="fld-input"><input type="text" id="fld<?php echo $forum_page['fld_count'] ?>" name="form[fancy_stop_spam_sfs_api_key]" size="35" maxlength="64" value="<?php echo forum_htmlencode($forum_config['o_fancy_stop_spam_sfs_api_key']) ?>" /></span>
+						</div>
+					</div>
 				</fieldset>
 		<?php
 		]]></hook>
@@ -321,6 +331,8 @@
 			if (!isset($form['fancy_stop_spam_check_signature']) || $form['fancy_stop_spam_check_signature'] != '1') $form['fancy_stop_spam_check_signature'] = '0';
 			if (!isset($form['fancy_stop_spam_check_submit']) || $form['fancy_stop_spam_check_submit'] != '1') $form['fancy_stop_spam_check_submit'] = '0';
 			if (!isset($form['fancy_stop_spam_use_logs']) || $form['fancy_stop_spam_use_logs'] != '1') $form['fancy_stop_spam_use_logs'] = '0';
+
+			$form['fancy_stop_spam_sfs_api_key'] = substr(forum_trim($form['fancy_stop_spam_sfs_api_key']), 0, 64);
 		]]></hook>
 
 
@@ -456,16 +468,21 @@
 
 		<!-- -->
 		<hook id="rg_register_form_submitted"><![CDATA[
+			// Check logs for repeated failed register attempts
+			$fancy_stop_spam = Fancy_stop_spam::singleton();
+			if (TRUE === $fancy_stop_spam->check_register_honeypot_repeated(get_remote_address())) {
+				$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_HONEYPOT_REPEATED, $forum_user['id'], get_remote_address());
+				message($lang_fancy_stop_spam['Register bot message']);
+			}
+
 			// CHECK HONEY FIELDS
 			if ($forum_config['o_fancy_stop_spam_register_form_honeypot'] == '1') {
 				if (!isset($_POST['form_honey_key_id'])) {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_HONEYPOT_EMPTY, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Register bot message']);
 				} else {
 					$fancy_stop_spam_fullkey = 'email_confirm_xxx_'.forum_htmlencode(forum_trim($_POST['form_honey_key_id']));
 					if (!empty($_POST[$fancy_stop_spam_fullkey])) {
-						$fancy_stop_spam = Fancy_stop_spam::singleton();
 						$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_HONEYPOT, $forum_user['id'], get_remote_address());
 						message($lang_fancy_stop_spam['Register bot message']);
 					}
@@ -475,13 +492,11 @@
 			// CHECK FORM FILL TIME
 			if ($forum_config['o_fancy_stop_spam_register_form_timeout'] == '1') {
 				if (!isset($_POST['form_fancy_stop_spam_time'])) {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_TIMEOUT, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Register bot message']);
 				} else {
 					$fancy_stop_spam_form_fill_time = time() - intval($_POST['form_fancy_stop_spam_time'], 10);
 					if ($fancy_stop_spam_form_fill_time < Fancy_stop_spam::FORM_FILL_MIN_TIME) {
-						$fancy_stop_spam = Fancy_stop_spam::singleton();
 						$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_TIMEOUT, $forum_user['id'], get_remote_address(), $fancy_stop_spam_form_fill_time);
 						$errors[] = $lang_fancy_stop_spam['Register bot timeout message'];
 					}
@@ -491,7 +506,6 @@
 			// CHECK TIMEZONE
 			if ($forum_config['o_fancy_stop_spam_register_form_timezone'] == '1') {
 				if (isset($_POST['timezone']) && $_POST['timezone'] == '-12') {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_TIMEZONE, $forum_user['id'], get_remote_address(), intval($_POST['timezone'], 10));
 					message($lang_fancy_stop_spam['Register bot timezone message']);
 				}
@@ -500,7 +514,6 @@
 			// CHECK SUBMIT VALUE
 			if ($forum_config['o_fancy_stop_spam_check_submit'] == '1') {
 				if ($_POST['register'] != $lang_profile['Register'].Fancy_stop_spam::SUBMIT_MARK) {
-					$fancy_stop_spam = Fancy_stop_spam::singleton();
 					$fancy_stop_spam->log(Fancy_stop_spam::LOG_REGISTER_SUBMIT, $forum_user['id'], get_remote_address());
 					message($lang_fancy_stop_spam['Post bot message']);
 				}
@@ -727,6 +740,9 @@
 							$fancy_stop_spam->print_user_status($user);
 						?>
 					</div>
+					<?php
+				        echo $fancy_stop_spam->print_logs($user['id']);
+					?>
 				</div>
 <?php
 				$tpl_temp = forum_trim(ob_get_contents());
@@ -746,23 +762,25 @@
 
 		<!-- Add section to admin menu -->
 		<hook id="ca_fn_generate_admin_menu_new_link"><![CDATA[
-			$forum_page['admin_menu']['fancy_stop_spam'] = '<li class="'.((FORUM_PAGE_SECTION == 'fancy_stop_spam') ? 'active' : 'normal').
+			$fancy_stop_spam_menu_element = '<li class="'.((FORUM_PAGE_SECTION == 'fancy_stop_spam') ? 'active' : 'normal').
 					((empty($forum_page['admin_menu'])) ? ' first-item' : '').'">
 					<a href="'.forum_link($forum_url['fancy_stop_spam_admin_section']).'">
 						<span>'.$lang_fancy_stop_spam["Admin section antispam"].'</span>
 					</a>
 				</li>';
+
+			array_insert($forum_page['admin_menu'], 'extensions_manage', $fancy_stop_spam_menu_element, 'fancy_stop_spam');
 		]]></hook>
 
 
 		<!-- Add submenus in admin menu -->
 		<hook id="ca_fn_generate_admin_menu_new_sublink"><![CDATA[
 			if ($forum_user['g_id'] == FORUM_ADMIN && FORUM_PAGE_SECTION == 'fancy_stop_spam') {
-				// INFORMATION
-				$forum_page['admin_submenu']['fancy_stop_spam_information'] = '
-					<li class="'.((FORUM_PAGE == 'admin-fancy_stop_spam_information') ? 'active' : 'normal').
+				// LOGS
+				$forum_page['admin_submenu']['fancy_stop_spam_logs'] = '
+					<li class="'.((FORUM_PAGE == 'admin-fancy_stop_spam_logs') ? 'active' : 'normal').
 						((empty($forum_page['admin_submenu'])) ? ' first-item' : '').'">
-						<a href="'.forum_link($forum_url['fancy_stop_spam_admin_section']).'">'.$lang_fancy_stop_spam["Admin submenu information"].'</a>
+						<a href="'.forum_link($forum_url['fancy_stop_spam_admin_logs']).'">'.$lang_fancy_stop_spam["Admin submenu logs"].'</a>
 					</li>';
 
 				// NEW USERS
@@ -778,13 +796,32 @@
 						((empty($forum_page['admin_submenu'])) ? ' first-item' : '').'">
 						<a href="'.forum_link($forum_url['fancy_stop_spam_admin_suspicious_users']).'">'.$lang_fancy_stop_spam["Admin submenu suspicious users"].'</a>
 					</li>';
+			}
+		]]></hook>
 
-				// LOGS
-				$forum_page['admin_submenu']['fancy_stop_spam_logs'] = '
-					<li class="'.((FORUM_PAGE == 'admin-fancy_stop_spam_logs') ? 'active' : 'normal').
-						((empty($forum_page['admin_submenu'])) ? ' first-item' : '').'">
-						<a href="'.forum_link($forum_url['fancy_stop_spam_admin_logs']).'">'.$lang_fancy_stop_spam["Admin submenu logs"].'</a>
-					</li>';
+
+		<!--  -->
+		<hook id="pf_delete_user_pre_fieldset_end"><![CDATA[
+			if (!empty($forum_config['o_fancy_stop_spam_sfs_api_key']) && $forum_config['o_regs_verify'] == '1') {
+			?>
+				<div class="sf-set set<?php echo ++$forum_page['item_count'] ?>">
+					<div class="sf-box checkbox">
+						<span class="fld-input"><input type="checkbox" id="fld<?php echo ++$forum_page['fld_count'] ?>" name="fancy_stop_spam_report_to_sfs" value="1" /></span>
+						<label for="fld<?php echo $forum_page['fld_count'] ?>"><?php echo $lang_fancy_stop_spam['Report to sfs'] ?></label>
+					</div>
+				</div>
+			<?php
+			}
+		]]></hook>
+
+
+		<!--  -->
+		<hook id="pf_delete_user_pre_redirect"><![CDATA[
+			if (isset($_POST['fancy_stop_spam_report_to_sfs']) && $forum_config['o_regs_verify'] == '1') {
+				if (!empty($forum_config['o_fancy_stop_spam_sfs_api_key'])) {
+					$fancy_stop_spam = Fancy_stop_spam::singleton();
+					$fancy_stop_spam->send_spam_data_to_sfs($user['username'], $user['email'], $user['registration_ip']);
+				}
 			}
 		]]></hook>
 	</hooks>
