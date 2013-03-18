@@ -140,7 +140,14 @@
 						'uri'			=> 'http://www.facebook.com/v/%s',
 						'width'			=> 500,
 						'height'		=> 280
-					)
+					),
+					
+					'liveleak' => array(
+						'match'			=> '`liveleak.com.*i=([a-zA-Z0-9-_]+)`',
+						'uri'			=> 'http://www.liveleak.com/e/%s',
+						'width'			=> 450,
+						'height'		=> 370
+					)					
 				);
 
 				// extract service's name and check for support
