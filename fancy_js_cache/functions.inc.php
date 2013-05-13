@@ -167,7 +167,7 @@ class FANCY_JS_CACHE {
 
 
 	//
-	private function css_rerwite_urls(&$line) {
+	private static function css_rerwite_urls(&$line) {
 		// REPLACE url( with DELIMETER
 		$line = preg_replace('/url\(/siu', '|7|url(', $line);
 
