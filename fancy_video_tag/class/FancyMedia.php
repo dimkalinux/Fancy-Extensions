@@ -2,6 +2,8 @@
 
 class FancyMedia
 {
+    const UNKNOWN_SERVICE_ID = 'unknown';
+
     protected $language;
     protected $services;
     protected $html5Mode;
@@ -22,30 +24,36 @@ class FancyMedia
 
     protected function getService($serviceId)
     {
-        return isset($this->service[$serviceId]) ? $this->service[$serviceId] : $this->service['unknown'];
+        return isset($this->service[$serviceId]) ? $this->service[$serviceId] : $this->service[self::UNKNOWN_SERVICE_ID];
     }
 
     public function parseUrl($url)
     {
         $videoUri = NULL;
-        $match = array();
 
         // Dirty trick to play arround do_clickable.
+        $match = array();
         preg_match('`href="([^"]+)"`', stripslashes($videoUri), $match);
         if (!empty($match[1])) {
             $videoUri = $match[1];
         }
 
-        // Extract service's name and check for support.
+        $serviceId = $this->getServiceIdFromUrl($videoUri);
+        $service   = $this->getService($match[1]);
+
+        return $service->getWidget($videoUri);
+    }
+
+    protected function getServiceIdFromUrl($url)
+    {
         $match = array();
-        preg_match('`^(?:http|https)://(?:[^\.]*\.)?([^\.]*)\.[^/]*/`i', $videoUri, $match);
-        if (empty($match[1]) || !array_key_exists($match[1], $service)) {
-            return '<a href="'.$videoUri.'">['.$fancy_video_tag["unknown_source"].']</a>';
+
+        preg_match('`^(?:http|https)://(?:[^\.]*\.)?([^\.]*)\.[^/]*/`i', $url, $match);
+        if (!empty($match[1])) {
+            return trim($match[1]);
         }
 
-        $service = $this->getService($match[1]);
-        return $service->getWidget($videoUri);
-
+        return self::UNKNOWN_SERVICE_ID;
     }
 }
 
@@ -80,6 +88,11 @@ class FancyMediaServiceUnknown extends FancyMediaService
     {
         // TODO: add forum_htmlencode.
         return sprintf('<a href="%s">[%s]</a>', $url, $fancy_video_tag["unknown_source"]);
+    }
+
+    protected function extractKey()
+    {
+
     }
 }
 
