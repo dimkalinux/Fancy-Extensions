@@ -72,14 +72,11 @@ abstract class FancyMediaService
 {
     protected $id;
     protected $html5Mode;
-
-    // RegExp.
     protected $matcher;
     protected $playerUrlTemplate;
     protected $html5WidgetTemplate;
     protected $widgetWidth  = 640;
     protected $widgetHeight = 385;
-
     protected $language;
 
     public function __construct(Array $language)
@@ -106,11 +103,10 @@ abstract class FancyMediaService
             $playerCode = $this->getFailedPlayerCode($url);
         } else {
             if ($this->canPlayInHtml5Mode()) {
-                $a1 = array('%SOURCE_ID%', '%WIDTH%', '%HEIGHT%');
-                $a2 = array(forum_htmlencode($sourceId), $this->widgetWidth, $this->widgetHeight);
-
+                $a1         = array('%SOURCE_ID%', '%WIDTH%', '%HEIGHT%');
+                $a2         = array(forum_htmlencode($sourceId), $this->widgetWidth, $this->widgetHeight);
                 $frameCode  = str_replace($a1, $a2, $this->html5WidgetTemplate);
-                $playerCode = '<div class="fancy_video_tag_player">' . $frameCode . '</div>';
+                $playerCode = '<div class="fancy_media_player">' . $frameCode . '</div>';
             } else {
                 $playerUrl  = str_replace('%SOURCE_ID%', forum_htmlencode($sourceId), $this->playerUrlTemplate);
                 $playerCode = $this->getDefaultPlayerCode($playerUrl, $url);
@@ -140,12 +136,12 @@ abstract class FancyMediaService
 
     protected function getDefaultPlayerCode($mediaUrl, $sourceUrl)
     {
-        $playerTemplate = '<div class="fancy_video_tag_player">'
+        $playerTemplate = '<div class="fancy_media_player">'
                         . '<object type="application/x-shockwave-flash" data="%MEDIA_URL%" width="%WIDTH%" height="%HEIGHT%">'
                         . '<param name="movie" value="%MEDIA_URL%"/>'
                         . '<param name="wmode" value="transparent"/>'
                         . '<param name="allowfullscreen" value="true"/>'
-                        . '<p><a href="%SOURCE_URL%">[no flash]</a></p>'
+                        . '<p><a href="%SOURCE_URL%">' . $this->language['no flash'] . '</a></p>'
                         . '</object>'
                         . '</div>';
 
@@ -164,7 +160,7 @@ class FancyMediaServiceUnknown extends FancyMediaService
 
     public function getWidget($url)
     {
-        return sprintf('<a href="%s">[%s]</a>', $url, 'Unknown source');
+        return sprintf('<a href="%s">[%s]</a>', $url, $this->language['unknown_source']);
     }
 }
 
