@@ -64,6 +64,9 @@ $fancyMedia->addService(new FancyMediaServiceYoutube($fancy_media_lang));
 $fancyMedia->addService(new FancyMediaServiceVimeo($fancy_media_lang));
 $fancyMedia->addService(new FancyMediaServiceSoundcloud($fancy_media_lang));
 $fancyMedia->addService(new FancyMediaServiceVine($fancy_media_lang));
+$fancyMedia->addService(new FancyMediaServiceDaylimotion($fancy_media_lang));
+$fancyMedia->addService(new FancyMediaServiceFacebook($fancy_media_lang));
+
 
 abstract class FancyMediaService
 {
@@ -132,7 +135,7 @@ abstract class FancyMediaService
 
     protected function getFailedPlayerCode($sourceUrl)
     {
-        return '<a href="' . $sourceUrl . '">[unknown media source]</a>';
+        return '<a href="' . forum_htmlencode($sourceUrl) . '">[unknown media source]</a>';
     }
 
     protected function getDefaultPlayerCode($mediaUrl, $sourceUrl)
@@ -147,7 +150,7 @@ abstract class FancyMediaService
                         . '</div>';
 
         $a1 = array('%MEDIA_URL%', '%WIDTH%', '%HEIGHT%', '%SOURCE_URL%');
-        $a2 = array($mediaUrl, $this->widgetWidth, $this->widgetHeight, $sourceUrl);
+        $a2 = array(forum_htmlencode($mediaUrl), $this->widgetWidth, $this->widgetHeight, forum_htmlencode($sourceUrl));
         $renderedPlayerCode = str_replace($a1, $a2, $playerTemplate);
 
         return $renderedPlayerCode;
@@ -190,6 +193,26 @@ class FancyMediaServiceSoundcloud extends FancyMediaService
     protected $matcher             = '`soundcloud.com/([-_a-z0-9]+/[-_a-z0-9]+)`i';
     protected $playerUrlTemplate   = 'http://player.soundcloud.com/player.swf?url=http://soundcloud.com/%SOURCE_ID%&amp;g=bb&amp;show_comments=false';
     protected $widgetHeight        = '81';
+}
+
+// Daylimotion.
+class FancyMediaServiceDaylimotion extends FancyMediaService
+{
+    protected $id                  = 'dailymotion';
+    protected $matcher             = '`video/([a-z0-9]+)_`i';
+    protected $playerUrlTemplate   = 'http://www.dailymotion.com/swf/video/%SOURCE_ID%&amp;amp;related=0&amp;amp;canvas=medium';
+    protected $html5WidgetTemplate = '<iframe frameborder="0" width="%WIDTH%" height="%HEIGHT%" src="http://www.dailymotion.com/embed/video/%SOURCE_ID%?theme=none"></iframe>';
+
+    protected $widgetWidth         = '640';
+    protected $widgetHeight        = '360';
+}
+
+// Facebook.
+class FancyMediaServiceFacebook extends FancyMediaService
+{
+    protected $id                  = 'facebook';
+    protected $matcher             = '`facebook.com/.*video\.php\?v=([0-9]+)`i';
+    protected $html5WidgetTemplate = '<iframe src="https://www.facebook.com/video/embed?video_id=%SOURCE_ID%" width="%WIDTH%" height="%HEIGHT%" frameborder="0"></iframe>';
 }
 
 // Vine.
