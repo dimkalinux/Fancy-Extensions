@@ -5,17 +5,16 @@ class FancyMedia
     const UNKNOWN_SERVICE_ID = 'unknown';
 
     protected $services;
-    protected $html5Mode;
+    protected $language;
 
-    public function __construct(Array $config)
+    public function __construct(Array $language)
     {
-        $this->services  = array();
-        $this->html5Mode = isset($config['o_fancy_media_use_html5']) && $config['o_fancy_media_use_html5'] == '1';
+        $this->language = $language;
     }
 
     public function addService(FancyMediaService $service)
     {
-        $service->setHtml5Mode($this->html5Mode);
+        $service->setLanguage($this->language);
         $this->services[$service->getId()] = $service;
     }
 
@@ -58,20 +57,21 @@ class FancyMedia
 }
 
 define('FANCY_MEDIA_LOADED', TRUE);
-$fancyMedia = new FancyMedia($forum_config);
-$fancyMedia->addService(new FancyMediaServiceUnknown($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceYoutube($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceVimeo($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceSoundcloud($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceVine($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceDaylimotion($fancy_media_lang));
-$fancyMedia->addService(new FancyMediaServiceFacebook($fancy_media_lang));
+$fancyMedia = new FancyMedia($fancy_media_lang);
+$fancyMedia->addService(new FancyMediaServiceUnknown);
+$fancyMedia->addService(new FancyMediaServiceYoutube);
+$fancyMedia->addService(new FancyMediaServiceYoutu);
+$fancyMedia->addService(new FancyMediaServiceVimeo);
+$fancyMedia->addService(new FancyMediaServiceSoundcloud);
+$fancyMedia->addService(new FancyMediaServiceVine);
+$fancyMedia->addService(new FancyMediaServiceDaylimotion);
+$fancyMedia->addService(new FancyMediaServiceRutube);
+$fancyMedia->addService(new FancyMediaServiceFacebook);
 
 
 abstract class FancyMediaService
 {
     protected $id;
-    protected $html5Mode;
     protected $matcher;
     protected $playerUrlTemplate;
     protected $html5WidgetTemplate;
@@ -79,19 +79,14 @@ abstract class FancyMediaService
     protected $widgetHeight = 385;
     protected $language;
 
-    public function __construct(Array $language)
-    {
-        $this->language = $language;
-    }
-
     public function getId()
     {
         return $this->id;
     }
 
-    public function setHtml5Mode($html5Mode)
+    public function setLanguage(Array $language)
     {
-        $this->html5Mode = (boolean) $html5Mode;
+        $this->language = $language;
     }
 
     // Default implementation.
@@ -103,9 +98,9 @@ abstract class FancyMediaService
             $playerCode = $this->getFailedPlayerCode($url);
         } else {
             if ($this->canPlayInHtml5Mode()) {
-                $a1         = array('%SOURCE_ID%', '%WIDTH%', '%HEIGHT%');
-                $a2         = array(forum_htmlencode($sourceId), $this->widgetWidth, $this->widgetHeight);
-                $frameCode  = str_replace($a1, $a2, $this->html5WidgetTemplate);
+                $pattern         = array('%SOURCE_ID%', '%WIDTH%', '%HEIGHT%');
+                $replace         = array(forum_htmlencode($sourceId), $this->widgetWidth, $this->widgetHeight);
+                $frameCode  = str_replace($pattern, $replace, $this->html5WidgetTemplate);
                 $playerCode = '<div class="fancy_media_player">' . $frameCode . '</div>';
             } else {
                 $playerUrl  = str_replace('%SOURCE_ID%', forum_htmlencode($sourceId), $this->playerUrlTemplate);
@@ -118,7 +113,7 @@ abstract class FancyMediaService
 
     protected function canPlayInHtml5Mode()
     {
-        return $this->html5Mode && !empty($this->html5WidgetTemplate);
+        return !empty($this->html5WidgetTemplate);
     }
 
     protected function extractSourceId($url)
@@ -160,7 +155,7 @@ class FancyMediaServiceUnknown extends FancyMediaService
 
     public function getWidget($url)
     {
-        return sprintf('<a href="%s">[%s]</a>', $url, $this->language['unknown_source']);
+        return sprintf('<a href="%s">[%s]</a>', forum_htmlencode($url), $this->language['unknown_source']);
     }
 }
 
@@ -169,8 +164,13 @@ class FancyMediaServiceYoutube extends FancyMediaService
 {
     protected $id                  = 'youtube';
     protected $matcher             = '`youtube.com.*v=([-_a-z0-9]+)`i';
-    protected $playerUrlTemplate   = 'http://www.youtube.com/v/%SOURCE_ID%&amp;rel=0';
     protected $html5WidgetTemplate = '<iframe class="youtube-player" type="text/html" width="%WIDTH%" height="%HEIGHT%" src="http://www.youtube.com/embed/%SOURCE_ID%" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>';
+}
+
+class FancyMediaServiceYoutu extends FancyMediaServiceYoutube
+{
+    protected $id                  = 'youtu';
+    protected $matcher             = '`youtu.be/([-_a-z0-9]+)`i';
 }
 
 // Vimeo.
@@ -178,7 +178,6 @@ class FancyMediaServiceVimeo extends FancyMediaService
 {
     protected $id                  = 'vimeo';
     protected $matcher             = '`/([0-9]+)`';
-    protected $playerUrlTemplate   = 'http://www.vimeo.com/moogaloop.swf?clip_id=%SOURCE_ID%&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;fullscreen=1';
     protected $html5WidgetTemplate = '<iframe src="http://player.vimeo.com/video/%SOURCE_ID%?portrait=0" width="%WIDTH%" height="%HEIGHT%" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>';
 }
 
@@ -196,7 +195,6 @@ class FancyMediaServiceDaylimotion extends FancyMediaService
 {
     protected $id                  = 'dailymotion';
     protected $matcher             = '`video/([a-z0-9]+)_`i';
-    protected $playerUrlTemplate   = 'http://www.dailymotion.com/swf/video/%SOURCE_ID%&amp;amp;related=0&amp;amp;canvas=medium';
     protected $html5WidgetTemplate = '<iframe frameborder="0" width="%WIDTH%" height="%HEIGHT%" src="http://www.dailymotion.com/embed/video/%SOURCE_ID%?theme=none"></iframe>';
 
     protected $widgetWidth         = '640';
@@ -211,12 +209,21 @@ class FancyMediaServiceFacebook extends FancyMediaService
     protected $html5WidgetTemplate = '<iframe src="https://www.facebook.com/video/embed?video_id=%SOURCE_ID%" width="%WIDTH%" height="%HEIGHT%" frameborder="0"></iframe>';
 }
 
+// Rutube.
+class FancyMediaServiceRutube extends FancyMediaService
+{
+    protected $id                  = 'rutube';
+    protected $matcher             = '`/video/([a-z0-9]+)`i';
+    protected $html5WidgetTemplate = '<iframe width="%WIDTH%" height="%HEIGHT%" src="http://rutube.ru/video/embed/%SOURCE_ID%" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowfullscreen></iframe>';
+}
+
 // Vine.
 class FancyMediaServiceVine extends FancyMediaService
 {
     protected $id                  = 'vine';
     protected $matcher             = '`vine.co/v/([a-z0-9]+)`i';
     protected $html5WidgetTemplate = '<iframe class="vine-embed" src="https://vine.co/v/%SOURCE_ID%/embed/postcard" width="%WIDTH%" height="%HEIGHT%" frameborder="0"></iframe><script async src="//platform.vine.co/static/scripts/embed.js" charset="utf-8"></script>';
+
     protected $widgetWidth         = '480';
     protected $widgetHeight        = '480';
 
