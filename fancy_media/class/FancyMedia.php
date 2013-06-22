@@ -186,7 +186,7 @@ class FancyMediaServiceSoundcloud extends FancyMediaService
 {
     protected $id                  = 'soundcloud';
     protected $matcher             = '`soundcloud.com/([-_a-z0-9]+/[-_a-z0-9]+)`i';
-    protected $playerUrlTemplate   = 'http://player.soundcloud.com/player.swf?url=http://soundcloud.com/%SOURCE_ID%&amp;g=bb&amp;show_comments=false';
+    protected $playerUrlTemplate   = 'http://player.soundcloud.com/player.swf?url=http://soundcloud.com/%SOURCE_ID%&g=bb&show_comments=false';
     protected $widgetHeight        = '81';
 }
 

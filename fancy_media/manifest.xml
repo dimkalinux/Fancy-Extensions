@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_media</id>
 	<title>Fancy Media</title>
-	<version>0.2</version>
+	<version>0.3</version>
 	<description>New BBcode tag ([media]) to display embedded media.</description>
 	<author>dimka.linux@gmail.com</author>
 
@@ -40,6 +40,17 @@
 		<hook id="ps_start"><![CDATA[
 			if (!defined('FANCY_MEDIA_LOADED'))
 			{
+				if (!isset($fancy_media_lang))
+				{
+					if ($forum_user['language'] != 'English'
+						&& file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')
+					) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+					} else {
+						require $ext_info['path'].'/lang/English/lang.php';
+					}
+				}
+
 				require $ext_info['path'] . '/class/FancyMedia.php';
 			}
 
