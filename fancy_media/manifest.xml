@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE extension SYSTEM "ext-1.0.dtd">
+
+<extension engine="1.0">
+	<id>fancy_media</id>
+	<title>Fancy Media</title>
+	<version>0.4</version>
+	<description>New BBcode tag ([media]) to display embedded media.</description>
+	<author>dimka.linux@gmail.com</author>
+
+	<minversion>1.4RC1</minversion>
+	<maxtestedon>1.4.2</maxtestedon>
+
+	<hooks>
+		<hook id="co_common" priority="7"><![CDATA[
+			if (!isset($fancy_media_lang))
+			{
+				if ($forum_user['language'] != 'English'
+					&& file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')
+				) {
+					require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+				} else {
+					require $ext_info['path'].'/lang/English/lang.php';
+				}
+			}
+		]]></hook>
+
+		<hook id="he_new_bbcode_link"><![CDATA[
+			$lang_help = array_merge($lang_help, $fancy_media_lang);
+?>
+			<div class="entry-content">
+				<code>[media]<?php echo $lang_help['fancy_media_help_video_uri'] ?>[/media]</code>
+				<span><?php echo $lang_help['produces'] ?></span>
+				<?php echo $lang_help['fancy_media_help_video_display'] ?>
+			</div>
+<?php
+		]]></hook>
+
+
+		<hook id="ps_start"><![CDATA[
+			if (!defined('FANCY_MEDIA_LOADED'))
+			{
+				if (!isset($fancy_media_lang))
+				{
+					if ($forum_user['language'] != 'English'
+						&& file_exists($ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php')
+					) {
+						require $ext_info['path'].'/lang/'.$forum_user['language'].'/lang.php';
+					} else {
+						require $ext_info['path'].'/lang/English/lang.php';
+					}
+				}
+
+				require $ext_info['path'] . '/class/FancyMedia.php';
+			}
+
+			function fancy_media_tag_parse($url)
+			{
+				global $fancyMedia;
+				return $fancyMedia->getWidget($url);
+			}
+		]]></hook>
+
+
+		<!-- add video tag to the list -->
+		<hook id="ps_preparse_tags_start"><![CDATA[
+			array_push($tags, 'media', 'video');
+			array_push($tags_opened, 'media', 'video');
+			array_push($tags_closed, 'media', 'video');
+			array_push($tags_inline, 'media', 'video');
+			array_push($tags_trim, 'media', 'video');
+
+			// We must allow url due to do_clickable.
+			$tags_limit_bbcode['media'] = array('url');
+			$tags_limit_bbcode['video'] = array('url');
+		]]></hook>
+
+
+		<hook id="ps_do_bbcode_replace"><![CDATA[
+			if (!$is_signature) {
+				$pattern[] = '`\[media\]([^\[]+)\[/media\]`e';
+				$replace[] = 'fancy_media_tag_parse(\'$1\')';
+
+				$pattern[] = '`\[video\]([^\[]+)\[/video\]`e';
+				$replace[] = 'fancy_media_tag_parse(\'$1\')';
+			}
+		]]></hook>
+
+
+		<hook id="pun_bbcode_pre_tags_merge"><![CDATA[
+			array_push($tags_without_attr, 'media', 'video');
+		]]></hook>
+
+
+		<!-- REMOVE EMPTY TAGS -->
+		<hook id="ps_preparse_bbcode_end"><![CDATA[
+			if ($forum_config['p_message_bbcode'] == '1' && !$is_signature)
+			{
+				while ($new_text = preg_replace('/\[(media|video)(?:\=[^\]]*)?\]\[\/\1\]/', '', $text))
+				{
+					if ($new_text != $text) {
+						$text = $new_text;
+					} else {
+						break;
+					}
+				}
+			}
+		]]></hook>
+
+
+		<hook id="hd_head"><![CDATA[
+			if (defined('FORUM_PAGE'))
+			{
+				if (in_array(FORUM_PAGE, array(
+					'news',
+					'postdelete',
+					'modtopic',
+					'post',
+					'viewtopic',
+					'searchposts',
+					'pun_pm-inbox',
+					'pun_pm-outbox'))
+				) {
+					$forum_loader->add_css('
+						.entry-content div.fancy_media_player {
+						max-width: 60em !important;
+						overflow: none !important; }', array('type' => 'inline', 'media' => 'screen')
+					);
+				}
+			}
+		]]></hook>
+
+		<!-- pun_bbcode - add button -->
+		<hook id="pun_bbcode_pre_buttons_output"><![CDATA[
+			$this->add_button(array('name'	=> 'fancy_media', 'title' => 'media', 'tag' => 'media', 'image' => TRUE));
+		]]></hook>
+
+		<!-- pun_bbcode - add styles for button -->
+		<hook id="pun_bbcode_styles_loaded"><![CDATA[
+			if ($forum_user['pun_bbcode_use_buttons'] == '1')
+			{
+				if ($forum_user['style'] != 'Oxygen'
+					&& file_exists($ext_info['path'].'/css/'.$forum_user['style'].'/fancy_media.css')
+				) {
+					$forum_loader->add_css(
+						$ext_info['url'].'/css/'.$forum_user['style'].'/fancy_media.css',
+						array('type' => 'url', 'media' => 'screen')
+					);
+				} else {
+					$forum_loader->add_css('#pun_bbcode_bar #pun_bbcode_button_fancy_media.image { background: url("'.$ext_info['url'].'/css/Oxygen/img/media.png") 50% 50% no-repeat; }', array('type' => 'inline'));
+				}
+			}
+		]]></hook>
+	</hooks>
+</extension>
