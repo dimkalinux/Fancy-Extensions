@@ -67,7 +67,8 @@ $fancyMedia->addService(new FancyMediaServiceVine);
 $fancyMedia->addService(new FancyMediaServiceDaylimotion);
 $fancyMedia->addService(new FancyMediaServiceRutube);
 $fancyMedia->addService(new FancyMediaServiceFacebook);
-
+$fancyMedia->addService(new FancyMediaServiceHulkshare);
+$fancyMedia->addService(new FancyMediaServiceHulkshareShort);
 
 abstract class FancyMediaService
 {
@@ -163,14 +164,14 @@ class FancyMediaServiceUnknown extends FancyMediaService
 class FancyMediaServiceYoutube extends FancyMediaService
 {
     protected $id                  = 'youtube';
-    protected $matcher             = '`youtube.com.*v=([-_a-z0-9]+)`i';
+    protected $matcher             = '`youtube\.(?:com|co.jp).*v=([-_a-z0-9]+)`i';
     protected $html5WidgetTemplate = '<iframe class="youtube-player" type="text/html" width="%WIDTH%" height="%HEIGHT%" src="http://www.youtube.com/embed/%SOURCE_ID%" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>';
 }
 
 class FancyMediaServiceYoutu extends FancyMediaServiceYoutube
 {
     protected $id                  = 'youtu';
-    protected $matcher             = '`youtu.be/([-_a-z0-9]+)`i';
+    protected $matcher             = '`youtu\.be/([-_a-z0-9]+)`i';
 }
 
 // Vimeo.
@@ -185,9 +186,25 @@ class FancyMediaServiceVimeo extends FancyMediaService
 class FancyMediaServiceSoundcloud extends FancyMediaService
 {
     protected $id                  = 'soundcloud';
-    protected $matcher             = '`soundcloud.com/([-_a-z0-9]+/[-_a-z0-9]+)`i';
+    protected $matcher             = '`soundcloud\.com/([-_a-z0-9]+/[-_a-z0-9]+)`i';
     protected $playerUrlTemplate   = 'http://player.soundcloud.com/player.swf?url=http://soundcloud.com/%SOURCE_ID%&g=bb&show_comments=false';
     protected $widgetHeight        = '81';
+}
+
+// HulkShare.
+class FancyMediaServiceHulkshare extends FancyMediaService
+{
+    protected $id                  = 'hulkshare';
+    protected $matcher             = '`(?:www.hulkshare\.com)/([a-z0-9]+)`i';
+    protected $html5WidgetTemplate = '<iframe src="http://www.hulkshare.com/embed.php?fn=%SOURCE_ID%" scrolling="no" frameborder="0" width="%WIDTH%" height="%HEIGHT%"></iframe>';
+    protected $widgetHeight        = '160';
+}
+
+// HulkShare short.
+class FancyMediaServiceHulkshareShort extends FancyMediaServiceHulkshare
+{
+    protected $id                  = 'hu';
+    protected $matcher             = '`(?:hu\.lk)/([a-z0-9]+)`i';
 }
 
 // Daylimotion.
@@ -205,7 +222,7 @@ class FancyMediaServiceDaylimotion extends FancyMediaService
 class FancyMediaServiceFacebook extends FancyMediaService
 {
     protected $id                  = 'facebook';
-    protected $matcher             = '`facebook.com/.*video\.php\?v=([0-9]+)`i';
+    protected $matcher             = '`facebook\.com/.*video\.php\?v=([0-9]+)`i';
     protected $html5WidgetTemplate = '<iframe src="https://www.facebook.com/video/embed?video_id=%SOURCE_ID%" width="%WIDTH%" height="%HEIGHT%" frameborder="0"></iframe>';
 }
 
@@ -221,7 +238,7 @@ class FancyMediaServiceRutube extends FancyMediaService
 class FancyMediaServiceVine extends FancyMediaService
 {
     protected $id                  = 'vine';
-    protected $matcher             = '`vine.co/v/([a-z0-9]+)`i';
+    protected $matcher             = '`vine\.co/v/([a-z0-9]+)`i';
     protected $html5WidgetTemplate = '<iframe class="vine-embed" src="https://vine.co/v/%SOURCE_ID%/embed/postcard" width="%WIDTH%" height="%HEIGHT%" frameborder="0"></iframe><script async src="//platform.vine.co/static/scripts/embed.js" charset="utf-8"></script>';
 
     protected $widgetWidth         = '480';

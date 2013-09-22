@@ -4,7 +4,7 @@
 <extension engine="1.0">
 	<id>fancy_media</id>
 	<title>Fancy Media</title>
-	<version>0.3</version>
+	<version>0.4</version>
 	<description>New BBcode tag ([media]) to display embedded media.</description>
 	<author>dimka.linux@gmail.com</author>
 
