@@ -191,9 +191,7 @@ class Fancy_login_loginza {
 
 		($hook = get_hook('li_login_pre_redirect')) ? eval($hook) : null;
 
-		//if (empty($prev_url)) {
-			$prev_url = forum_link($forum_url['index']);
-		//}
+		$prev_url = forum_link($forum_url['index']);
 
 		redirect(forum_htmlencode($prev_url).((substr_count($prev_url, '?') == 1) ? '&amp;' : '?').'login=1', $lang_login['Login redirect']);
 	}
@@ -257,7 +255,8 @@ class Fancy_login_loginza {
 		($hook = get_hook('rg_register_qr_delete_unverified')) ? eval($hook) : null;
 		$forum_db->query_build($query) or error(__FILE__, __LINE__);
 
-		($hook = get_hook('rg_register_end_validation')) ? eval($hook) : null;
+        // Commented due not working with pun_stop_bots.
+		// ($hook = get_hook('rg_register_end_validation')) ? eval($hook) : null;
 
 		// User default info
 		$language = $forum_config['o_default_lang'];
