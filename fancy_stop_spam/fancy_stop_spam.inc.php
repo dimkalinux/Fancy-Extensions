@@ -750,7 +750,7 @@ class Fancy_stop_spam {
 
             $data['unix'] = '1';
 
-            $check_url = 'http://www.stopforumspam.com/api?'.http_build_query($data);
+            $check_url = 'http://api.stopforumspam.org/api?'.http_build_query($data);
             $check_result = get_remote_file($check_url, 15, FALSE, 2);
 
             if (isset($check_result['content']) !== FALSE && !empty($check_result['content'])) {
@@ -927,9 +927,3 @@ class Fancy_stop_spam {
         return $status;
     }
 }
-
-/*
-class TypePadAnitiSpam {
-    const
-
-}*/
