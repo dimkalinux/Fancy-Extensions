@@ -416,6 +416,7 @@
 		<hook id="re_rewrite_rules"><![CDATA[
 			$forum_rewrite_rules['/^(favorite|unfavorite)[\/_-]?([0-9]+)[\/_-]?([a-z0-9]+)?(\.html?|\/)?$/i'] = 'misc.php?action=$1&tid=$2&csrf_token=$3';
 			$forum_rewrite_rules['/^search[\/_-]?favorite[\/_-]?([0-9]+)(\.html?|\/)?$/i'] = 'search.php?action=show_favorite&user_id=$1';
+            $forum_rewrite_rules['/^search[\/_-]?favorite[\/_-]?([0-9]+)[\/_-]?page[\/_-]?([0-9]+)?(\.html?|\/)?$/i'] = 'search.php?action=show_favorite&user_id=$1&p=$2';
 		]]></hook>
 	</hooks>
 </extension>
